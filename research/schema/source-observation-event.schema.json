@@ -1,0 +1,197 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/source-observation-event.v1.json",
+  "title": "Append-only source snapshot and observation event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ledger_id",
+    "sequence",
+    "event_id",
+    "event_kind",
+    "recorded_at",
+    "previous_event_sha256",
+    "event_sha256",
+    "object_kind",
+    "object_id",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {"const": "source-observation-event.v1"},
+    "ledger_id": {"const": "source-observations"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "event_id": {"type": "string", "pattern": "^source-observation-event:[a-z0-9][a-z0-9.-]*$"},
+    "event_kind": {"enum": ["source_snapshot_recorded", "observation_recorded", "object_invalidated"]},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "previous_event_sha256": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/sha256"}
+      ]
+    },
+    "event_sha256": {"$ref": "#/$defs/sha256"},
+    "object_kind": {"enum": ["source_snapshot", "observation", "invalidation"]},
+    "object_id": {"type": "string", "minLength": 1},
+    "payload": {
+      "oneOf": [
+        {"$ref": "#/$defs/sourceSnapshot"},
+        {"$ref": "#/$defs/observation"},
+        {"$ref": "#/$defs/invalidation"}
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"event_kind": {"const": "source_snapshot_recorded"}}},
+      "then": {
+        "properties": {
+          "object_kind": {"const": "source_snapshot"},
+          "object_id": {"pattern": "^source-snapshot:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"},
+          "payload": {"$ref": "#/$defs/sourceSnapshot"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"event_kind": {"const": "observation_recorded"}}},
+      "then": {
+        "properties": {
+          "object_kind": {"const": "observation"},
+          "object_id": {"pattern": "^observation:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"},
+          "payload": {"$ref": "#/$defs/observation"}
+        }
+      }
+    },
+    {
+      "if": {"properties": {"event_kind": {"const": "object_invalidated"}}},
+      "then": {
+        "properties": {
+          "object_kind": {"const": "invalidation"},
+          "object_id": {"pattern": "^invalidation:[a-z0-9][a-z0-9.-]*$"},
+          "payload": {"$ref": "#/$defs/invalidation"}
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableDateTime": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "sourceSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_snapshot_id",
+        "source_id",
+        "snapshot_version",
+        "source_kind",
+        "repository_path",
+        "observed_at",
+        "content_sha256",
+        "availability",
+        "freshness_policy",
+        "expires_at",
+        "trust_class",
+        "license_class",
+        "supersedes_source_snapshot_id",
+        "non_mathematical_evidence"
+      ],
+      "properties": {
+        "source_snapshot_id": {"type": "string", "pattern": "^source-snapshot:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"},
+        "source_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
+        "snapshot_version": {"type": "integer", "minimum": 1},
+        "source_kind": {"enum": ["repository_snapshot", "append_only_cutoff", "derived_inventory", "derived_projection", "policy_registry", "supply_lock", "external_retrieval_receipt"]},
+        "repository_path": {"type": "string", "pattern": "^[A-Za-z0-9_./-]+$"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "content_sha256": {"$ref": "#/$defs/sha256"},
+        "availability": {"const": "available"},
+        "freshness_policy": {"enum": ["immutable_snapshot", "append_only_cutoff", "mutable_observation"]},
+        "expires_at": {"$ref": "#/$defs/nullableDateTime"},
+        "trust_class": {"enum": ["authoritative_internal", "derived_internal", "non_authoritative_observation", "allowlisted_external_metadata"]},
+        "license_class": {"enum": ["project_internal", "metadata_only", "mixed_source_metadata", "w3c_document_terms", "ietf_document_terms", "cc_by_4_0_metadata", "external_terms_metadata_only"]},
+        "supersedes_source_snapshot_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^source-snapshot:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"}
+          ]
+        },
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "invalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "invalidation_id",
+        "target_kind",
+        "target_id",
+        "target_digest",
+        "reason",
+        "detail",
+        "invalidated_at",
+        "invalidated_by",
+        "non_mathematical_evidence"
+      ],
+      "properties": {
+        "invalidation_id": {"type": "string", "pattern": "^invalidation:[a-z0-9][a-z0-9.-]*$"},
+        "target_kind": {"enum": ["source_snapshot", "observation"]},
+        "target_id": {"type": "string", "pattern": "^(source-snapshot|observation):[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"},
+        "target_digest": {"$ref": "#/$defs/sha256"},
+        "reason": {"enum": ["content_drift", "expiry", "license_change", "trust_revoked", "source_unavailable", "owner_correction"]},
+        "detail": {"type": "string", "minLength": 1, "maxLength": 500},
+        "invalidated_at": {"type": "string", "format": "date-time"},
+        "invalidated_by": {"const": "governance-owner"},
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "observation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "observation_id",
+        "observation_version",
+        "subject_kind",
+        "subject_id",
+        "predicate",
+        "value_type",
+        "value",
+        "value_sha256",
+        "summary",
+        "source_snapshot_id",
+        "source_content_sha256",
+        "observed_at",
+        "authority_class",
+        "expires_at",
+        "supersedes_observation_id",
+        "non_mathematical_evidence"
+      ],
+      "properties": {
+        "observation_id": {"type": "string", "pattern": "^observation:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"},
+        "observation_version": {"type": "integer", "minimum": 1},
+        "subject_kind": {"enum": ["repository", "agent_session_store", "web_project", "git_topology", "capability_registry", "tool_registry", "supply_chain", "research_case", "assignment_ledger", "external_source"]},
+        "subject_id": {"type": "string", "pattern": "^[A-Za-z0-9_.:/-]+$"},
+        "predicate": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "value_type": {"enum": ["count_vector", "status_vector", "identity_binding", "freshness_vector"]},
+        "value": {"type": "object", "minProperties": 1},
+        "value_sha256": {"$ref": "#/$defs/sha256"},
+        "summary": {"type": "string", "minLength": 1, "maxLength": 500},
+        "source_snapshot_id": {"type": "string", "pattern": "^source-snapshot:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"},
+        "source_content_sha256": {"$ref": "#/$defs/sha256"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "authority_class": {"enum": ["authoritative_internal", "derived_observation", "external_nonauthoritative", "external_primary_observation"]},
+        "expires_at": {"$ref": "#/$defs/nullableDateTime"},
+        "supersedes_observation_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^observation:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"}
+          ]
+        },
+        "non_mathematical_evidence": {"const": true}
+      }
+    }
+  }
+}

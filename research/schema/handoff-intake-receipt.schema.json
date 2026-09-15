@@ -1,0 +1,150 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/handoff-intake-receipt.v1.json",
+  "title": "Vibe Mathing Durable Handoff Intake Receipt",
+  "description": "A final control-plane receipt for a HandoffEnvelope intake. It records Candidate-only transport and never constitutes Evidence or Result.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "nullableDigest": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "at"],
+      "properties": {
+        "status": {"enum": ["completed", "skipped", "recovered", "pending"]},
+        "at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "job_identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "project_id",
+        "job_id",
+        "run_instance_id",
+        "attempt_id",
+        "session_id",
+        "dedupe_key",
+        "problem_id",
+        "problem_contract_sha256",
+        "route_id",
+        "graph_id",
+        "obligation_id"
+      ],
+      "properties": {
+        "project_id": {"$ref": "#/$defs/identifier"},
+        "job_id": {"$ref": "#/$defs/identifier"},
+        "run_instance_id": {"$ref": "#/$defs/identifier"},
+        "attempt_id": {"$ref": "#/$defs/identifier"},
+        "session_id": {"$ref": "#/$defs/identifier"},
+        "dedupe_key": {"$ref": "#/$defs/identifier"},
+        "problem_id": {"$ref": "#/$defs/identifier"},
+        "problem_contract_sha256": {"$ref": "#/$defs/digest"},
+        "route_id": {"$ref": "#/$defs/identifier"},
+        "graph_id": {"$ref": "#/$defs/identifier"},
+        "obligation_id": {"$ref": "#/$defs/identifier"}
+      }
+    },
+    "event_ids": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_created", "verifier_requested", "blocked", "failed"],
+      "properties": {
+        "candidate_created": {"$ref": "#/$defs/nullableIdentifier"},
+        "verifier_requested": {"$ref": "#/$defs/nullableIdentifier"},
+        "blocked": {"$ref": "#/$defs/nullableIdentifier"},
+        "failed": {"$ref": "#/$defs/nullableIdentifier"}
+      }
+    },
+    "nullableIdentifier": {
+      "type": ["string", "null"],
+      "minLength": 1,
+      "maxLength": 512
+    },
+    "event_digests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_created", "verifier_requested", "blocked", "failed"],
+      "properties": {
+        "candidate_created": {"$ref": "#/$defs/nullableDigest"},
+        "verifier_requested": {"$ref": "#/$defs/nullableDigest"},
+        "blocked": {"$ref": "#/$defs/nullableDigest"},
+        "failed": {"$ref": "#/$defs/nullableDigest"}
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "envelope_sha256",
+    "outcome",
+    "decision",
+    "idempotent",
+    "job_identity",
+    "candidate_id",
+    "candidate_record_sha256",
+    "candidate_artifact_sha256",
+    "event_ids",
+    "event_digests",
+    "stages",
+    "created_at",
+    "completed_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "receipt_id": {"type": "string", "pattern": "^handoff-intake:[a-f0-9]{64}$"},
+    "envelope_sha256": {"$ref": "#/$defs/digest"},
+    "outcome": {"enum": ["candidate", "blocked", "transport_failure"]},
+    "decision": {"enum": ["candidate_only", "blocked", "transport_failure"]},
+    "idempotent": {"type": "boolean"},
+    "job_identity": {"$ref": "#/$defs/job_identity"},
+    "candidate_id": {
+      "type": ["string", "null"],
+      "pattern": "^candidate:[a-z0-9][a-z0-9.-]*$"
+    },
+    "candidate_record_sha256": {"$ref": "#/$defs/nullableDigest"},
+    "candidate_artifact_sha256": {"$ref": "#/$defs/nullableDigest"},
+    "event_ids": {"$ref": "#/$defs/event_ids"},
+    "event_digests": {"$ref": "#/$defs/event_digests"},
+    "stages": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "validated",
+        "candidate_persisted",
+        "candidate_created_event",
+        "verifier_requested_event",
+        "finalized"
+      ],
+      "properties": {
+        "validated": {"$ref": "#/$defs/stage"},
+        "candidate_persisted": {"$ref": "#/$defs/stage"},
+        "candidate_created_event": {"$ref": "#/$defs/stage"},
+        "verifier_requested_event": {"$ref": "#/$defs/stage"},
+        "finalized": {"$ref": "#/$defs/stage"}
+      }
+    },
+    "created_at": {"$ref": "#/$defs/timestamp"},
+    "completed_at": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    }
+  }
+}

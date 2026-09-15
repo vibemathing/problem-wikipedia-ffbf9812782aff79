@@ -142,6 +142,19 @@ def _derive_from_snapshot(
                 raise BundleConflict(
                     f"{problem_id}: ObligationGraph 同时闭合 proof 与 counterexample"
                 )
+            lineage = obligation_state.get("lineage", {})
+            candidate_states = lineage.get("candidate_states", {})
+            link_states = lineage.get("evidence_link_states", {})
+            current_candidate_ids = {
+                candidate_id
+                for candidate_id, state_value in candidate_states.items()
+                if state_value.get("status") == "current"
+            }
+            current_link_ids = {
+                link_id
+                for link_id, state_value in link_states.items()
+                if state_value.get("status") == "current"
+            }
             obligation_graphs.append(
                 {
                     "graph": graph,
@@ -150,6 +163,7 @@ def _derive_from_snapshot(
                             candidate
                             for candidate in obligation_state["candidates"].values()
                             if candidate["graph_id"] == graph_id
+                            and candidate["candidate_id"] in current_candidate_ids
                         ),
                         key=lambda item: item["candidate_id"],
                     ),
@@ -158,6 +172,8 @@ def _derive_from_snapshot(
                             link
                             for link in obligation_state["links"]
                             if link["graph_id"] == graph_id
+                            and link["evidence_link_id"] in current_link_ids
+                            and link["candidate_id"] in current_candidate_ids
                         ),
                         key=lambda item: item["evidence_link_id"],
                     ),

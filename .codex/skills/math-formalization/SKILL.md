@@ -80,3 +80,16 @@ rg -n '\b(sorry|admit)\b' .
 - Sources：`wentor-research-plugins`、`leanprover-skills`、`mathevidence`、`itpeval`、`atp-checkers`；只吸收方法、不变量和反例，不直接激活上游代码。
 - Last updated：2026-09-05。
 - Verification：安装后必须用当前 Lean/Mathlib 官方工具运行最小无 `sorry` vertical slice。
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+继承 `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md` 的 D06–D09：kernel acceptance 只覆盖固定形式陈述和 proof term；`statement_identity`、`statement_faithfulness`、axiom/escape audit、独立复放与 root closure 必须分别闭合，编译成功不得自动生成 Result。
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+继承 `governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md`，并从 `governance/control-plane/lean-toolchain-lock.v1.json` 读取唯一 Lean/Mathlib 基线。区分 candidate、native kernel、adversarial high-assurance 三档；`lake build`/`#print axioms`/statement identity/semantic faithfulness/toolchain freshness/`proof_replay_check` 必须分轴，native profile 的证据上限是 `supported`。
+lake build
+# 名称从 central lock 读取；当前 Lean 4.33.1 分发命令为 leanchecker
+lake env leanchecker --fresh Module.Name
+rg -n '\b(sorry|admit|axiom|unsafe|native_decide)\b' .
+形式化包必须包含：原命题、verifier 侧 trusted challenge、Candidate Lean 陈述、定义映射、imports、证明义务、逐输入 digest、实际命令、退出码、Lean/Mathlib 版本、native fresh replay、axiom/sorry 审计和 faithfulness 状态。Candidate source 不得同时充当 trusted challenge。
+未审查 AI Lean source 按 potentially malicious 处理，禁止直接送入非 sandbox 的 Lake/native runner；当前 native request 只接受 `trusted_fixture_native`，尚未实现可机器核验的 reviewed-candidate 例外。只有命令真实返回成功、所有输入执行前后 digest 稳定、无占位证明、`leanchecker --fresh` 成功，且 Candidate theorem 经 Lean 类型检查实际 inhabit trusted proposition，才能记录对应 native `kernel_check` 与 `statement_identity`；字符串包含关系没有通过权。native profile 上限仍为 `supported`。AI 生成 proof 的 terminal admission 还必须由已准入 sandbox/external-checker route 签发 `proof_replay_check`，不得由本 Skill 或 native rechecker 自报。
+- Last updated：2026-09-09。
+- Implementation status：trusted challenge 与 native fresh replay 已进入源码；按操作者要求未重复执行既有 fixture，新增层保持 `implementation_complete_validation_deferred`。
+- Verification：只有收到新的明确复验要求后，才运行当前 Lean/Mathlib 的最小无 `sorry` vertical slice。

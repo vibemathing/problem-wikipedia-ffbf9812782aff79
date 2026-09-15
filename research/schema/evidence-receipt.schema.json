@@ -18,6 +18,8 @@
         "axiom_escape_audit",
         "statement_identity",
         "statement_faithfulness",
+        "toolchain_freshness",
+        "proof_replay_check",
         "prior_art_review"
       ]
     },

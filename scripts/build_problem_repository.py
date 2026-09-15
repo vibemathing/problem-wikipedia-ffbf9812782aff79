@@ -24,7 +24,7 @@ ROOT = Path(__file__).resolve().parents[1]
 TASK = ROOT / "governance/tasks/0027-web-gpt-github-chat-research-harness"
 DEFAULT_MANIFEST = TASK / "harness-source-manifest.v1.json"
 DEFAULT_TEMPLATE = TASK / "problem-repository-template"
-BUILDER_VERSION = "1.5.1"
+BUILDER_VERSION = "1.8.0"
 IDENTITY_EXCLUDES = {"HARNESS_SNAPSHOT.json", "HARNESS_SNAPSHOT_HISTORY.json", "WEB_BOOTSTRAP.md"}
 MUTABLE_GENERATED = {
     "research/records/attempts.jsonl",
@@ -350,9 +350,66 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
     (output / "WEB_CONTEXT_BUNDLE.md").write_text(render_context(output), encoding="utf-8")
     os.chmod(output / "WEB_CONTEXT_BUNDLE.md", 0o644)
 
+    lean_lock = json.loads((output / "governance/control-plane/lean-toolchain-lock.v1.json").read_text(encoding="utf-8"))
+    lean_qualification = lean_lock["qualification"]
+    harness_release_eligible = lean_qualification.get("native_kernel_route") == "qualified"
     output_contract = {
-        "schema_version": "1.0.0",
+        "schema_version": "1.2.0",
         "channel": profile["channel_id"],
+        "foundation_policy": {
+            "id": "verified-ai-math-research-foundation:v1",
+            "marker": "VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1",
+            "metamodel_root": "PLFB",
+            "loop_stages": [f"D{index:02d}" for index in range(1, 12)],
+            "state_layers": ["generation", "verification", "admission", "mathematical_conclusion"],
+            "automatic_result_promotion": False,
+            "conflict_policy": "freeze",
+        },
+        "formal_verification_policy": {
+            "id": "formal-verification-infrastructure:v1",
+            "marker": "FORMAL_VERIFICATION_INFRASTRUCTURE_V1",
+            "formal_verification_role": "mandatory_cross_face_infrastructure",
+            "lean_role": "default_reference_kernel_and_required_compatibility_lane",
+            "lean_lock": "governance/control-plane/lean-toolchain-lock.v1.json",
+            "universal_formalization_readiness_required": True,
+            "universal_lean_execution_required": False,
+            "native_kernel_evidence_ceiling": "supported",
+            "unreviewed_ai_lean_source_trust": "potentially_malicious",
+            "trusted_challenge_authority": "verifier_side_only",
+            "candidate_challenge_source_separation_required": True,
+            "statement_identity_method": "trusted_typed_probe",
+            "string_identity_has_admission_power": False,
+            "native_execution_profile": "trusted_fixture_native",
+            "native_challenge_allowlist_required": True,
+            "native_fresh_replay_trust_domain": "lean-kernel",
+            "native_fresh_replay_is_proof_replay_check": False,
+            "external_replay_requirements": [
+                "fixed_checker_exporter_runner_config",
+                "candidate_sandbox",
+                "different_verifier_and_trust_domain",
+                "fresh_digest_bound_receipt",
+                "export_coverage_and_statement_correspondence",
+            ],
+            "terminal_proof_requires": [
+                "kernel_check",
+                "axiom_escape_audit",
+                "statement_identity",
+                "statement_faithfulness",
+                "toolchain_freshness",
+                "proof_replay_check",
+            ],
+            "terminal_counterexample_requires": [
+                "counterexample_check",
+                "statement_identity",
+                "statement_faithfulness",
+            ],
+            "failed_or_unqualified_route_status": "blocked_or_undetermined",
+            "native_route_qualification": lean_qualification["native_kernel_route"],
+            "adversarial_route_qualification": lean_qualification["adversarial_high_assurance_route"],
+            "harness_release_eligible": harness_release_eligible,
+            "harness_release_blocker": None if harness_release_eligible else "lean_authoritative_validation_not_qualified",
+            "web_may_sign_verifier_capabilities": False,
+        },
         "bootstrap_ack_schema": "research/schema/web-bootstrap-ack.schema.json",
         "attempt_packet_schema": "research/schema/web-attempt-packet.schema.json",
         "allowed_write_paths": profile["allowed_repository_write_paths"],
@@ -506,6 +563,8 @@ def build(args: argparse.Namespace) -> dict[str, Any]:
         "contract_sha256": contract_digest,
         "problem_lifecycle": problem["lifecycle"],
         "problem_admission": problem_admission,
+        "release_eligible": harness_release_eligible,
+        "release_blocker": None if harness_release_eligible else "lean_authoritative_validation_not_qualified",
         "snapshot_sha256": snapshot_sha,
         "tree_sha256": snapshot["tree_sha256"],
         "files": len(snapshot["files"]),

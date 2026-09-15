@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/lean-external-replay-receipt.v1.json",
+  "title": "Lean Comparator and External Checker Replay Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "subject",
+    "challenge",
+    "candidate_bundle",
+    "sandbox",
+    "export",
+    "statement_correspondence",
+    "checkers",
+    "aggregate_verdict",
+    "evidence_capability",
+    "evidence_eligible",
+    "checked_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "lean-external-replay-receipt.v1"},
+    "receipt_id": {"type": "string", "pattern": "^lean-replay:[a-z0-9][a-z0-9.-]*$"},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problem_id", "attempt_id", "graph_id", "obligation_id", "candidate_id"],
+      "properties": {
+        "problem_id": {"type": "string", "minLength": 1},
+        "attempt_id": {"type": "string", "minLength": 1},
+        "graph_id": {"type": "string", "minLength": 1},
+        "obligation_id": {"type": "string", "minLength": 1},
+        "candidate_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "challenge": {"$ref": "#/$defs/contentAddressedLeanObject"},
+    "candidate_bundle": {"$ref": "#/$defs/contentAddressedObject"},
+    "sandbox": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runner", "runtime_digest", "network", "write_scope", "build_status"],
+      "properties": {
+        "runner": {"type": "string", "minLength": 1},
+        "runtime_digest": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "network": {"const": "disabled"},
+        "write_scope": {"enum": ["ephemeral_workspace_only"]},
+        "build_status": {"$ref": "#/$defs/nativeStatus"}
+      }
+    },
+    "export": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["exporter", "source_commit", "format", "artifact_sha256", "status", "coverage_complete"],
+      "properties": {
+        "exporter": {"type": "string", "minLength": 1},
+        "source_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "format": {"type": "string", "minLength": 1},
+        "artifact_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "status": {"$ref": "#/$defs/nativeStatus"},
+        "coverage_complete": {"type": "boolean"}
+      }
+    },
+    "statement_correspondence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "trusted_statement_constant", "exported_statement_sha256"],
+      "properties": {
+        "status": {"enum": ["accept", "reject", "undetermined"]},
+        "trusted_statement_constant": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_'.]*$"},
+        "exported_statement_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "checkers": {
+      "type": "array",
+      "minItems": 2,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/checkerResult"}
+    },
+    "aggregate_verdict": {"enum": ["accept", "reject", "undetermined"]},
+    "evidence_capability": {"const": "proof_replay_check"},
+    "evidence_eligible": {"type": "boolean"},
+    "checked_at": {"type": "string", "format": "date-time"}
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"evidence_eligible": {"const": true}}, "required": ["evidence_eligible"]},
+      "then": {
+        "properties": {
+          "aggregate_verdict": {"const": "accept"},
+          "sandbox": {"properties": {"build_status": {"const": "accepted"}}},
+          "export": {"properties": {"status": {"const": "accepted"}, "coverage_complete": {"const": true}}},
+          "statement_correspondence": {"properties": {"status": {"const": "accept"}}},
+          "checkers": {
+            "not": {"contains": {"properties": {"status": {"not": {"const": "accepted"}}}}},
+            "allOf": [
+              {"contains": {"properties": {"role": {"const": "native_kernel"}, "status": {"const": "accepted"}}, "required": ["role", "status"]}},
+              {"contains": {"properties": {"role": {"const": "external_checker"}, "status": {"const": "accepted"}}, "required": ["role", "status"]}}
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "nativeStatus": {"enum": ["accepted", "rejected", "declined", "timeout", "resource_error", "checker_error"]},
+    "contentAddressedObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locator", "sha256"],
+      "properties": {
+        "locator": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "contentAddressedLeanObject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locator", "sha256", "module", "statement_constant"],
+      "properties": {
+        "locator": {"type": "string", "minLength": 1},
+        "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "module": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.]*$"},
+        "statement_constant": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_'.]*$"}
+      }
+    },
+    "checkerResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verifier", "role", "trust_domain", "source_commit", "binary_sha256", "config_sha256", "status", "command_exit_code", "stdout_sha256", "stderr_sha256"],
+      "properties": {
+        "verifier": {"type": "string", "minLength": 1},
+        "role": {"enum": ["native_kernel", "external_checker", "structural_checker"]},
+        "trust_domain": {"type": "string", "minLength": 1},
+        "source_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "binary_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "config_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "status": {"$ref": "#/$defs/nativeStatus"},
+        "command_exit_code": {"type": "integer"},
+        "stdout_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "stderr_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"role": {"const": "external_checker"}}, "required": ["role"]},
+          "then": {"properties": {"trust_domain": {"not": {"const": "lean-kernel"}}}}
+        },
+        {
+          "if": {"properties": {"status": {"const": "accepted"}}, "required": ["status"]},
+          "then": {"properties": {"command_exit_code": {"const": 0}}}
+        }
+      ]
+    }
+  }
+}

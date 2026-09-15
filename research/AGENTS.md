@@ -2,6 +2,18 @@
 
 `research/` holds the research chain for the repository's one canonical ProblemContract.
 
+## Verified discovery loop
+
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+
+This space inherits `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md`. Every Attempt/Route/Obligation/Candidate/receipt/EvidenceLink/Result transition binds stable identity and statement digest. Steps are bounded and checkpointed; failed routes and conflicts remain first-class and may not be overwritten by later success logs.
+
+## Formal verification infrastructure
+
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+
+This space inherits `governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md`. Formalization candidates bind the central Lean/Mathlib lock and an assurance profile. Treat unreviewed AI Lean source as potentially malicious: the frozen declaration and verifier-side trusted challenge stay outside Candidate control, challenge/Candidate digests are distinct, statement identity is established by a trusted typed probe rather than text matching, and semantic faithfulness requires independent review. Native kernel, axiom/escape audit, identity, faithfulness, freshness and replay stay separate. Non-sandbox native input requires registry-authorized `trusted_fixture_native` plus an allowlisted challenge digest; native `leanchecker --fresh` remains same-domain `lean-kernel`, not `proof_replay_check`. A terminal proof replay request must name fixed checker/exporter/runner/config identities, sandbox the Candidate and use a different trust domain. Missing, timed-out, stale or unqualified routes are `blocked/undetermined`, never a refutation or Evidence.
+
 ## Mandatory reasoning discipline
 
 <!-- MATHEMATICAL_REASONING_DISCIPLINE_V1 -->

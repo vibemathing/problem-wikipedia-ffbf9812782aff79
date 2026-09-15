@@ -8,10 +8,20 @@
 result-library/
 ├── AGENTS.md
 ├── README.md
+├── cases/                    # 结案卷宗系统（叙事层，见 cases/AGENTS.md）
 ├── schema/result.schema.json
 ├── records/results.jsonl
 └── indexes/solutions.json
 ```
+
+## 可验证 Result 晋升基石
+
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+
+本真相源继承 `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md`。`established` 必须满足独立 kernel、axiom/escape、statement identity 与 faithfulness 能力；`refuted` 必须满足独立域内 counterexample、identity 与 faithfulness；两者均须绑定 root closure 且无有效冲突。CI、PR、会话、工具退出和 Candidate acceptance 永不替代这些能力。
+
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+按 `governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md`，AI 生成 proof 的 `established` 还必须具有有效 `toolchain_freshness` 与 sandbox 外 `proof_replay_check`；verifier-side trusted challenge、typed statement identity、native Lean build 或 `leanchecker --fresh` 均不可单独替代 external replay 与 semantic faithfulness。精确反例路径不强制 Lean，但仍要求 typed counterexample、identity、faithfulness 和 root closure。
 
 ## Result 验收数学推理纪律
 
@@ -32,8 +42,13 @@ Result gate 必须按 `governance/standards/MATHEMATICAL_REASONING_DISCIPLINE.md
 - 同一 Problem 的 proof 与 counterexample 不得同时满足完整解准入；冲突必须阻止写入与 ResearchBundle 导出。
 - 新增、删除或移动文件时同步维护本文件与 README。
 
+## 结案卷宗系统
+
+`cases/` 是三层复盘结构的叙事层（事实层=`research/records/*.jsonl`，结构层=0038 case-dag-catalog）：把问题从开放到闭合的完整过程以时间线+证据链固化。硬规则见 `cases/AGENTS.md`：正式卷宗只能从已准入 Result 派生；未准入过程档案只能放 `cases/dossiers/historical/` 并显式标记 `candidate_only`；注册表 `cases/catalog.json` 只增，由 `cases/tools/validate_catalog.py` 校验。
+
 ## 验证
 
 ```bash
 python3 scripts/validate_research_spaces.py
+python3 result-library/cases/tools/validate_catalog.py
 ```

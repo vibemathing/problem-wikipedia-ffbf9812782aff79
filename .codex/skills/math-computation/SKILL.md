@@ -7,6 +7,10 @@ description: "可重跑的数学计算与反例实验。用于 SymPy 精确代�
 
 用成熟计算库生成可重跑证据；计算用于发现、反驳和核对，不越权成为一般性证明。
 
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+
+继承 `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md` 的 D05/D08：计算必须固定输入、范围、工具链、预算和输出摘要；退出码、有限枚举、CAS/SMT native status 与数值拟合只能提供声明能力内的候选或 receipt，不能替代一般证明或准入。
+
 ## When to Use This Skill
 
 - 需要精确化简、求解、积分、极限、级数、矩阵或多项式计算。

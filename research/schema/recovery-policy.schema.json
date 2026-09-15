@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/recovery-policy.v1.json",
+  "title": "Vibe Mathing Bounded Recovery Policy v1",
+  "description": "A pure, finite recovery policy. It describes control-plane actions only and never proves a mathematical result.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "decision": {
+      "enum": [
+        "retry_same",
+        "resume_verified",
+        "switch_route",
+        "park",
+        "block_human",
+        "terminal_execution_failure"
+      ]
+    },
+    "backoff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["strategy", "base_seconds", "max_seconds"],
+      "properties": {
+        "strategy": {
+          "const": "exponential_no_jitter"
+        },
+        "base_seconds": {
+          "type": "number",
+          "minimum": 0
+        },
+        "max_seconds": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        }
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_total_attempts",
+        "max_same_route_attempts",
+        "max_route_switches",
+        "max_resume_attempts"
+      ],
+      "properties": {
+        "max_total_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+        "max_same_route_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+        "max_route_switches": {"$ref": "#/$defs/nonNegativeInteger"},
+        "max_resume_attempts": {"$ref": "#/$defs/nonNegativeInteger"}
+      }
+    },
+    "decisionContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["budget", "backoff", "idempotency", "stop_proof"],
+      "properties": {
+        "budget": {"$ref": "#/$defs/budget"},
+        "backoff": {"$ref": "#/$defs/backoff"},
+        "idempotency": {
+          "enum": [
+            "replay_safe_with_dedupe_key",
+            "resume_receipt_required",
+            "no_external_write",
+            "new_route_from_verified_checkpoint",
+            "terminal_no_retry"
+          ]
+        },
+        "stop_proof": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "decision",
+        "max_attempts",
+        "backoff_multiplier",
+        "idempotency",
+        "stop_proof",
+        "records_failed_route",
+        "requires_resume_receipt",
+        "requires_delivery_probe"
+      ],
+      "properties": {
+        "decision": {"$ref": "#/$defs/decision"},
+        "max_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+        "backoff_multiplier": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 16
+        },
+        "idempotency": {
+          "enum": [
+            "replay_safe_with_dedupe_key",
+            "resume_receipt_required",
+            "no_external_write",
+            "new_route_from_verified_checkpoint",
+            "terminal_no_retry"
+          ]
+        },
+        "stop_proof": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "records_failed_route": {"type": "boolean"},
+        "requires_resume_receipt": {"type": "boolean"},
+        "requires_delivery_probe": {"type": "boolean"}
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "policy_id",
+    "max_total_attempts",
+    "max_same_route_attempts",
+    "max_route_switches",
+    "max_resume_attempts",
+    "max_delivery_retries",
+    "backoff",
+    "decision_contracts",
+    "rules"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "policy_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$"
+    },
+    "max_total_attempts": {"$ref": "#/$defs/positiveInteger"},
+    "max_same_route_attempts": {"$ref": "#/$defs/positiveInteger"},
+    "max_route_switches": {"$ref": "#/$defs/nonNegativeInteger"},
+    "max_resume_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+    "max_delivery_retries": {"$ref": "#/$defs/nonNegativeInteger"},
+    "backoff": {"$ref": "#/$defs/backoff"},
+    "decision_contracts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "retry_same",
+        "resume_verified",
+        "switch_route",
+        "park",
+        "block_human",
+        "terminal_execution_failure"
+      ],
+      "properties": {
+        "retry_same": {"$ref": "#/$defs/decisionContract"},
+        "resume_verified": {"$ref": "#/$defs/decisionContract"},
+        "switch_route": {"$ref": "#/$defs/decisionContract"},
+        "park": {"$ref": "#/$defs/decisionContract"},
+        "block_human": {"$ref": "#/$defs/decisionContract"},
+        "terminal_execution_failure": {"$ref": "#/$defs/decisionContract"}
+      }
+    },
+    "rules": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rate_limit",
+        "network_disconnect",
+        "delivery_timeout",
+        "execution_timeout",
+        "tool_error",
+        "resource_limit",
+        "hard_stop",
+        "session_lost",
+        "invalid_checkpoint",
+        "unknown"
+      ],
+      "properties": {
+        "rate_limit": {"$ref": "#/$defs/rule"},
+        "network_disconnect": {"$ref": "#/$defs/rule"},
+        "delivery_timeout": {"$ref": "#/$defs/rule"},
+        "execution_timeout": {"$ref": "#/$defs/rule"},
+        "tool_error": {"$ref": "#/$defs/rule"},
+        "resource_limit": {"$ref": "#/$defs/rule"},
+        "hard_stop": {"$ref": "#/$defs/rule"},
+        "session_lost": {"$ref": "#/$defs/rule"},
+        "invalid_checkpoint": {"$ref": "#/$defs/rule"},
+        "unknown": {"$ref": "#/$defs/rule"}
+      }
+    }
+  }
+}

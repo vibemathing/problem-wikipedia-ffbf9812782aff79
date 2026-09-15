@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/evidence-admission-decision.v1.json",
+  "title": "Vibe Mathing Evidence Admission Decision",
+  "description": "A deterministic, fail-closed projection over Candidate, EvidenceLink, receipt and verifier lineage. This object is not a Result or a Solution View.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "capability": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "idList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/id"}
+    },
+    "capabilityList": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/capability"}
+    }
+  },
+  "required": [
+    "schema_version",
+    "decision",
+    "graph_id",
+    "problem_id",
+    "attempt_id",
+    "obligation_id",
+    "candidate_id",
+    "candidate_kind",
+    "candidate_status",
+    "required_capabilities",
+    "accepted_capabilities",
+    "missing_capabilities",
+    "evidence_link_ids",
+    "accepted_evidence_link_ids",
+    "rejected_evidence_link_ids",
+    "undetermined_evidence_link_ids",
+    "conflicting_candidate_ids",
+    "reasons"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "decision": {
+      "enum": ["admit_evidence", "reject", "undetermined", "conflict"]
+    },
+    "graph_id": {
+      "type": "string",
+      "pattern": "^graph:[a-z0-9][a-z0-9.-]*$"
+    },
+    "problem_id": {
+      "type": "string",
+      "pattern": "^problem:[a-z0-9][a-z0-9.-]*$"
+    },
+    "attempt_id": {
+      "type": "string",
+      "pattern": "^attempt:[a-z0-9][a-z0-9.-]*$"
+    },
+    "obligation_id": {
+      "type": "string",
+      "pattern": "^obligation:[a-z0-9][a-z0-9.-]*$"
+    },
+    "candidate_id": {
+      "type": "string",
+      "pattern": "^candidate:[a-z0-9][a-z0-9.-]*$"
+    },
+    "candidate_kind": {
+      "type": ["string", "null"],
+      "enum": ["proof", "counterexample", "formalization", "computation", null]
+    },
+    "candidate_status": {
+      "enum": ["current", "stale", "retracted", "invalidated", "unknown"]
+    },
+    "required_capabilities": {"$ref": "#/$defs/capabilityList"},
+    "accepted_capabilities": {"$ref": "#/$defs/capabilityList"},
+    "missing_capabilities": {"$ref": "#/$defs/capabilityList"},
+    "evidence_link_ids": {"$ref": "#/$defs/idList"},
+    "accepted_evidence_link_ids": {"$ref": "#/$defs/idList"},
+    "rejected_evidence_link_ids": {"$ref": "#/$defs/idList"},
+    "undetermined_evidence_link_ids": {"$ref": "#/$defs/idList"},
+    "conflicting_candidate_ids": {"$ref": "#/$defs/idList"},
+    "reasons": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 2000}
+    },
+    "projection_sha256": {"$ref": "#/$defs/digest"}
+  }
+}

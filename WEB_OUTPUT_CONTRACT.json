@@ -52,6 +52,77 @@
     "kernel_checked",
     "result_admitted"
   ],
+  "formal_verification_policy": {
+    "adversarial_route_qualification": "blocked",
+    "candidate_challenge_source_separation_required": true,
+    "external_replay_requirements": [
+      "fixed_checker_exporter_runner_config",
+      "candidate_sandbox",
+      "different_verifier_and_trust_domain",
+      "fresh_digest_bound_receipt",
+      "export_coverage_and_statement_correspondence"
+    ],
+    "failed_or_unqualified_route_status": "blocked_or_undetermined",
+    "formal_verification_role": "mandatory_cross_face_infrastructure",
+    "harness_release_blocker": null,
+    "harness_release_eligible": true,
+    "id": "formal-verification-infrastructure:v1",
+    "lean_lock": "governance/control-plane/lean-toolchain-lock.v1.json",
+    "lean_role": "default_reference_kernel_and_required_compatibility_lane",
+    "marker": "FORMAL_VERIFICATION_INFRASTRUCTURE_V1",
+    "native_challenge_allowlist_required": true,
+    "native_execution_profile": "trusted_fixture_native",
+    "native_fresh_replay_is_proof_replay_check": false,
+    "native_fresh_replay_trust_domain": "lean-kernel",
+    "native_kernel_evidence_ceiling": "supported",
+    "native_route_qualification": "qualified",
+    "statement_identity_method": "trusted_typed_probe",
+    "string_identity_has_admission_power": false,
+    "terminal_counterexample_requires": [
+      "counterexample_check",
+      "statement_identity",
+      "statement_faithfulness"
+    ],
+    "terminal_proof_requires": [
+      "kernel_check",
+      "axiom_escape_audit",
+      "statement_identity",
+      "statement_faithfulness",
+      "toolchain_freshness",
+      "proof_replay_check"
+    ],
+    "trusted_challenge_authority": "verifier_side_only",
+    "universal_formalization_readiness_required": true,
+    "universal_lean_execution_required": false,
+    "unreviewed_ai_lean_source_trust": "potentially_malicious",
+    "web_may_sign_verifier_capabilities": false
+  },
+  "foundation_policy": {
+    "automatic_result_promotion": false,
+    "conflict_policy": "freeze",
+    "id": "verified-ai-math-research-foundation:v1",
+    "loop_stages": [
+      "D01",
+      "D02",
+      "D03",
+      "D04",
+      "D05",
+      "D06",
+      "D07",
+      "D08",
+      "D09",
+      "D10",
+      "D11"
+    ],
+    "marker": "VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1",
+    "metamodel_root": "PLFB",
+    "state_layers": [
+      "generation",
+      "verification",
+      "admission",
+      "mathematical_conclusion"
+    ]
+  },
   "harness_maintenance_policy": {
     "branch_prefix": "maintenance/harness-",
     "exact_regenerated_snapshot_delta_required": true,
@@ -95,7 +166,7 @@
     "unrelated_repositories_allowed": false
   },
   "save_hidden_chain_of_thought": false,
-  "schema_version": "1.0.0",
+  "schema_version": "1.2.0",
   "state_freshness_policy": {
     "audit_maturity_is_repository_admission": false,
     "authoritative_state": "fresh_default_branch_and_live_github_objects",

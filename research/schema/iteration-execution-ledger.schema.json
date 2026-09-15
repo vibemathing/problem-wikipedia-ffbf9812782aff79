@@ -1,0 +1,53 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/iteration-execution-ledger.v1.json",
+  "title": "Bounded iteration execution checkpoint",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ledger_id", "execution_plan_id", "planned_at", "started_at", "checkpoint_at", "round_count", "rounds", "boundaries", "mathematical_truth_change", "ledger_sha256"],
+  "properties": {
+    "schema_version": {"const": "iteration-execution-ledger.v1"},
+    "ledger_id": {"type": "string", "pattern": "^task0038-iteration[0-9]+-execution$"},
+    "execution_plan_id": {"type": "string", "pattern": "^execution-plan:[a-z0-9][a-z0-9.-]*:v[0-9]+$"},
+    "planned_at": {"type": "string", "format": "date-time"},
+    "started_at": {"type": "string", "format": "date-time"},
+    "checkpoint_at": {"type": "string", "format": "date-time"},
+    "round_count": {"type": "integer", "minimum": 1},
+    "rounds": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["round_id", "plan_node_id", "operation", "status", "artifacts", "side_effects", "mathematical_truth_change"],
+        "properties": {
+          "round_id": {"type": "string", "pattern": "^R[0-9]{2}$"},
+          "plan_node_id": {"type": "string", "pattern": "^plan:[a-z0-9][a-z0-9.-]*$"},
+          "operation": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+          "status": {"const": "accepted"},
+          "artifacts": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"}},
+          "side_effects": {"type": "array", "maxItems": 0},
+          "mathematical_truth_change": {"const": false}
+        }
+      }
+    },
+    "boundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["worker_started", "message_sent", "network_refetched", "push_performed", "pull_request_created", "candidate_created", "evidence_issued", "result_created", "solution_created"],
+      "properties": {
+        "worker_started": {"const": false},
+        "message_sent": {"const": false},
+        "network_refetched": {"const": false},
+        "push_performed": {"const": false},
+        "pull_request_created": {"const": false},
+        "candidate_created": {"const": false},
+        "evidence_issued": {"const": false},
+        "result_created": {"const": false},
+        "solution_created": {"const": false}
+      }
+    },
+    "mathematical_truth_change": {"const": false},
+    "ledger_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+  }
+}

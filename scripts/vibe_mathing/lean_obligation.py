@@ -20,6 +20,7 @@ from .evidence import (
     load_verifier_registry,
     sha256_file,
 )
+from .formal_assurance import load_lean_toolchain_lock
 from .obligations import ObligationError, load_obligation_state
 from .runtime import RuntimeErrorBase, execute_bounded, now
 
@@ -28,6 +29,12 @@ ESCAPE_PATTERN = re.compile(
     r"\b(?:sorry|admit|unsafe|axiom|partial|extern|native_decide|implemented_by)\b|#eval"
 )
 AXIOM_LIST_PATTERN = re.compile(r"depends on axioms:\s*\[([^\]]*)\]", re.DOTALL)
+
+# ``statement_faithfulness`` (source-text fidelity) and ``statement_identity``
+# (trusted typed probe) are both current, schema-admitted capabilities for this
+# verifier; a request may carry either or both verifier keys, and both are
+# persisted and admitted after a canonical run (merge decision 2026-09-12).
+STATEMENT_CAPABILITY = "statement_faithfulness"
 
 
 class LeanObligationError(RuntimeError):
@@ -44,7 +51,15 @@ def _resolve_tool(name: str) -> str:
     raise LeanObligationError(f"找不到 {name}")
 
 
-def _validate_request(project_root: Path, request: dict[str, Any]) -> None:
+def _validate_request(
+    project_root: Path, request: dict[str, Any]
+) -> tuple[dict[str, Any], bool]:
+    """Validate a request; the legacy-alias flag is always False after the merge.
+
+    ``statement_identity`` is a current capability (trusted typed probe), so no
+    verifier key is renamed or marked as a migration alias.  The caller's object
+    is not mutated.
+    """
     schema_path = project_root / "research/schema/lean-obligation-request.schema.json"
     try:
         schema = json.loads(schema_path.read_text(encoding="utf-8"))
@@ -56,6 +71,11 @@ def _validate_request(project_root: Path, request: dict[str, Any]) -> None:
     )
     if errors:
         raise LeanObligationError(f"Lean obligation request 无效：{errors[0].message}")
+    verifiers = dict(request["verifiers"])
+    legacy_alias = False
+    normalized = dict(request)
+    normalized["verifiers"] = verifiers
+    return normalized, legacy_alias
 
 
 def _safe_directory(project_root: Path, locator: str) -> Path:
@@ -85,6 +105,31 @@ def _safe_source(fixture_root: Path, locator: str) -> Path:
     if path.is_symlink() or not path.is_file():
         raise LeanObligationError(f"Lean source 必须是 regular file：{locator}")
     return path
+
+
+def _trusted_challenge(
+    fixture_root: Path,
+    source_paths: list[Path],
+    config: dict[str, Any],
+) -> Path:
+    challenge = _safe_source(fixture_root, config["source_file"])
+    if challenge.resolve() in {path.resolve() for path in source_paths}:
+        raise LeanObligationError("trusted challenge 不得属于 Candidate source_files")
+    actual = sha256_file(challenge)
+    if actual != config["sha256"]:
+        raise LeanObligationError("trusted challenge digest 不匹配")
+    return challenge
+
+
+def _bind_expected_declaration(
+    obligation: dict[str, Any],
+    expected_declaration: str,
+) -> None:
+    frozen = obligation.get("statement", {}).get("formal_declaration")
+    if not frozen or expected_declaration != frozen:
+        raise LeanObligationError(
+            "expected_declaration 与 obligation frozen formal declaration 不一致"
+        )
 
 
 def _strip_lean_comments_and_strings(text: str) -> str:
@@ -161,6 +206,21 @@ def _toolchain_fingerprint(fixture_root: Path) -> tuple[str, str]:
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return toolchain, digest.hexdigest()
+
+
+def _native_input_admitted(
+    registry: dict[str, dict[str, Any]],
+    candidate: dict[str, Any],
+    execution_profile: str,
+    challenge_sha256: str,
+) -> bool:
+    generator = registry.get(candidate.get("generator"))
+    return bool(
+        generator
+        and generator.get("role") == "generator"
+        and generator.get("native_input_trust", "denied") == execution_profile
+        and challenge_sha256 in generator.get("trusted_challenge_allowlist", [])
+    )
 
 
 def _toolchain_admitted(
@@ -259,7 +319,7 @@ def verify_lean_obligation(
 ) -> dict[str, Any]:
     """Run fixed Lean commands and return receipts plus uncommitted EvidenceLinks."""
     project_root = project_root.resolve()
-    _validate_request(project_root, request)
+    request, legacy_alias = _validate_request(project_root, request)
     try:
         state = load_obligation_state(project_root)
     except ObligationError as exc:
@@ -275,13 +335,42 @@ def verify_lean_obligation(
     ):
         raise LeanObligationError("Lean request 与 Candidate 身份或 kind 不一致")
     obligation = state["obligations_by_graph"][graph["graph_id"]][request["obligation_id"]]
+    _bind_expected_declaration(obligation, request["expected_declaration"])
     fixture_root = _safe_directory(project_root, request["fixture_root"])
     source_paths = [_safe_source(fixture_root, value) for value in request["source_files"]]
+    challenge_path = _trusted_challenge(
+        fixture_root,
+        source_paths,
+        request["trusted_challenge"],
+    )
     candidate_path = project_root / candidate["artifact"]["locator"]
     if candidate_path.resolve() not in {path.resolve() for path in source_paths}:
         raise LeanObligationError("Candidate artifact 必须列入 Lean source_files")
+    input_paths = [*source_paths, challenge_path]
+    input_digests_before = {
+        path.relative_to(project_root).as_posix(): sha256_file(path)
+        for path in input_paths
+    }
     toolchain, toolchain_fingerprint = _toolchain_fingerprint(fixture_root)
+    try:
+        lean_lock = load_lean_toolchain_lock(project_root)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        raise LeanObligationError("无法读取 central Lean toolchain lock") from exc
+    if toolchain != lean_lock["lean"]["toolchain"]:
+        raise LeanObligationError("Lean obligation toolchain 与 central lock 不一致")
+    rechecker = lean_lock["native_rechecker"]
+    if rechecker.get("trust_domain") != "lean-kernel":
+        raise LeanObligationError("native rechecker trust domain 漂移")
+    if lean_lock["qualification"]["native_kernel_route"] != "qualified":
+        raise LeanObligationError("Lean native route 尚未完成当前实现资格复验")
     registry = load_verifier_registry(project_root)
+    if not _native_input_admitted(
+        registry,
+        candidate,
+        request["execution_profile"],
+        request["trusted_challenge"]["sha256"],
+    ):
+        raise LeanObligationError("Candidate generator 未获 trusted native input 准入")
     verifier_ids = [request["verifiers"][key] for key in sorted(request["verifiers"])]
     admitted = _toolchain_admitted(
         registry,
@@ -298,6 +387,11 @@ def verify_lean_obligation(
         and request["declaration"].split(".")[-1]
         in request["expected_declaration"]
     )
+    if not admitted:
+        raise LeanObligationError("Lean verifier/toolchain 未获精确 allowlist 准入")
+    source_text = "\n".join(path.read_text(encoding="utf-8") for path in source_paths)
+    stripped_source = _strip_lean_comments_and_strings(source_text)
+    escapes = sorted(set(ESCAPE_PATTERN.findall(stripped_source)))
     statement_digest_match = candidate["statement_sha256"] == obligation["statement_sha256"]
     budgets = request["budgets"]
     runtime_kwargs = {
@@ -308,10 +402,13 @@ def verify_lean_obligation(
     lake = _resolve_tool("lake")
     version: dict[str, Any] = {"argv": ["lake", "env", "lean", "--version"], "exit_code": 1, "stdout": "", "stderr": "not run"}
     build: dict[str, Any] = {"argv": ["lake", "--quiet", "build"], "exit_code": 1, "stdout": "", "stderr": "not run"}
+    native_recheck: dict[str, Any] = {"argv": ["lake", "env", rechecker["command"], rechecker["fresh_flag"], request["module"]], "exit_code": 1, "stdout": "", "stderr": "not run"}
     axiom: dict[str, Any] = {"argv": ["lake", "env", "lean", "<axiom-audit>"], "exit_code": 1, "stdout": "", "stderr": "not run"}
+    identity: dict[str, Any] = {"argv": ["lake", "env", "lean", "<statement-identity>"], "exit_code": 1, "stdout": "", "stderr": "not run"}
     native_status = "accepted"
     runtime_error: str | None = None
     audit_path: Path | None = None
+    identity_path: Path | None = None
     try:
         version_raw = execute_bounded(
             [lake, "env", "lean", "--version"],
@@ -330,6 +427,22 @@ def verify_lean_obligation(
         )
         build = _sanitize_process_result(
             build_raw,
+            project_root=project_root,
+            fixture_root=fixture_root,
+        )
+        native_recheck_raw = execute_bounded(
+            [
+                lake,
+                "env",
+                rechecker["command"],
+                rechecker["fresh_flag"],
+                request["module"],
+            ],
+            cwd=fixture_root,
+            **runtime_kwargs,
+        )
+        native_recheck = _sanitize_process_result(
+            native_recheck_raw,
             project_root=project_root,
             fixture_root=fixture_root,
         )
@@ -353,7 +466,32 @@ def verify_lean_obligation(
             project_root=project_root,
             fixture_root=fixture_root,
         )
-        if any(item["exit_code"] != 0 for item in (version, build, axiom)):
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            encoding="utf-8",
+            suffix=".lean",
+            prefix=".vibe-statement-identity-",
+            dir=fixture_root,
+            delete=False,
+        ) as handle:
+            handle.write(
+                f"import {request['trusted_challenge']['module']}\n"
+                f"import {request['module']}\n"
+                f"example : {request['trusted_challenge']['statement_constant']} := "
+                f"{request['declaration']}\n"
+            )
+            identity_path = Path(handle.name)
+        identity_raw = execute_bounded(
+            [lake, "env", "lean", identity_path.name],
+            cwd=fixture_root,
+            **runtime_kwargs,
+        )
+        identity = _sanitize_process_result(
+            identity_raw,
+            project_root=project_root,
+            fixture_root=fixture_root,
+        )
+        if any(item["exit_code"] != 0 for item in (version, build, native_recheck, axiom)):
             native_status = "rejected"
     except RuntimeErrorBase as exc:
         native_status = _classify_runtime_failure(exc)
@@ -363,23 +501,63 @@ def verify_lean_obligation(
     finally:
         if audit_path is not None:
             audit_path.unlink(missing_ok=True)
+        if identity_path is not None:
+            identity_path.unlink(missing_ok=True)
 
+    input_digests_after = {
+        path.relative_to(project_root).as_posix(): (
+            sha256_file(path) if path.is_file() and not path.is_symlink() else None
+        )
+        for path in input_paths
+    }
+    inputs_stable = input_digests_after == input_digests_before
+    if not inputs_stable and native_status == "accepted":
+        native_status = "rejected"
     axiom_text = axiom.get("stdout", "") + axiom.get("stderr", "")
     parse_status, actual_axioms = _parse_axioms(axiom_text)
     unauthorized_axioms = sorted(set(actual_axioms) - set(request["allowed_axioms"]))
     if not admitted and native_status == "accepted":
         native_status = "unsupported"
-    kernel_accept = native_status == "accepted" and build["exit_code"] == 0 and axiom["exit_code"] == 0
+    kernel_accept = (
+        native_status == "accepted"
+        and build["exit_code"] == 0
+        and native_recheck["exit_code"] == 0
+        and axiom["exit_code"] == 0
+    )
     axiom_accept = (
         kernel_accept
         and not escapes
         and parse_status == "parsed"
         and not unauthorized_axioms
     )
-    statement_accept = kernel_accept and declaration_identity and statement_digest_match
+    declaration_identity_typed = identity["exit_code"] == 0
+    statement_accept = kernel_accept and declaration_identity_typed and statement_digest_match
+    # 文本层声明身份核对保留为既有 fixture 策略：typed probe 之外仍要求源文本
+    # 包含冻结声明（statement_faithfulness 能力使用）。
+    declaration_text_identity = declaration_identity
+    statement_faithfulness_accept = (
+        not legacy_alias
+        and kernel_accept
+        and declaration_text_identity
+        and statement_digest_match
+    )
+    # A legacy request may be inspected and its kernel/axiom checks may still
+    # be reported, but its old statement alias is never upgraded.  Keep the
+    # result explicitly undetermined so callers cannot mistake it for a
+    # failed semantic comparison or an admitted faithfulness check.
+    statement_verdict = (
+        "undetermined"
+        if legacy_alias
+        else "accept"
+        if statement_faithfulness_accept
+        else "undetermined"
+        if native_status in {"timeout", "resource_error", "checker_error", "unsupported"}
+        else "reject"
+    )
     decisions = {
         "kernel_check": kernel_accept,
         "axiom_escape_audit": axiom_accept,
+        "statement_faithfulness": statement_faithfulness_accept,
         "statement_identity": statement_accept,
     }
     common = {
@@ -393,7 +571,14 @@ def verify_lean_obligation(
         "toolchain_admission_status": "admitted" if admitted else "unadmitted",
         "version": version,
         "build": build,
+        "native_recheck": native_recheck,
+        "native_rechecker_trust_domain": rechecker["trust_domain"],
+        "execution_profile": request["execution_profile"],
+        "input_digests_before": input_digests_before,
+        "input_digests_after": input_digests_after,
+        "inputs_stable": inputs_stable,
         "axiom_command": axiom,
+        "identity_command": identity,
         "runtime_error": runtime_error,
     }
     payloads = {
@@ -411,14 +596,32 @@ def verify_lean_obligation(
             "actual_axioms": actual_axioms,
             "unauthorized_axioms": unauthorized_axioms,
             "axiom_parse_status": parse_status,
+            # These names are retained for the existing fixture policy; their
+            # values are derived from the same parsed native audit above.
+            "axiom_output": axiom_text,
+            "axiom_clean": axiom_accept,
         },
         "statement_identity": {
             **common,
             "capability": "statement_identity",
             "verdict": "accept" if statement_accept else "undetermined" if native_status in {"timeout", "resource_error", "checker_error", "unsupported"} else "reject",
             "expected_declaration": request["expected_declaration"],
-            "declaration_identity": declaration_identity,
+            "trusted_challenge": request["trusted_challenge"],
+            "declaration_identity": declaration_identity_typed,
             "statement_sha256_match": statement_digest_match,
+        },
+        STATEMENT_CAPABILITY: {
+            **common,
+            "capability": STATEMENT_CAPABILITY,
+            "verdict": statement_verdict,
+            "expected_declaration": request["expected_declaration"],
+            "trusted_challenge": request["trusted_challenge"],
+            "declaration_identity": declaration_text_identity,
+            "statement_sha256_match": statement_digest_match,
+            # The generic Lean statement policy consumes this fixture-shaped
+            # boolean; it is derived locally and is not a caller assertion.
+            "match": declaration_text_identity and statement_digest_match,
+            "migration_status": "requires_migration" if legacy_alias else "not_applicable",
         },
     }
     checked_at = now()
@@ -426,11 +629,8 @@ def verify_lean_obligation(
         f"{checked_at}\0{os.getpid()}\0{time.time_ns()}".encode()
     ).hexdigest()[:12]
     inputs = [
-        {
-            "locator": path.relative_to(project_root).as_posix(),
-            "sha256": sha256_file(path),
-        }
-        for path in source_paths
+        {"locator": locator, "sha256": digest}
+        for locator, digest in sorted(input_digests_before.items())
     ]
     toolchain_record = {
         "id": "lean",
@@ -439,7 +639,17 @@ def verify_lean_obligation(
     }
     links: list[dict[str, Any]] = []
     receipts: list[dict[str, Any]] = []
-    for capability in ("kernel_check", "axiom_escape_audit", "statement_identity"):
+    persisted_capabilities = ["kernel_check", "axiom_escape_audit"]
+    # The canonical run persists exactly the statement capabilities the request
+    # asked for: ``statement_faithfulness`` (v1 text fidelity) and/or
+    # ``statement_identity`` (v2 typed trusted probe) are both current, admitted
+    # capabilities after the merge, and each is verified under its own verifier
+    # policy.
+    if STATEMENT_CAPABILITY in request["verifiers"]:
+        persisted_capabilities.append(STATEMENT_CAPABILITY)
+    if "statement_identity" in request["verifiers"]:
+        persisted_capabilities.append("statement_identity")
+    for capability in persisted_capabilities:
         payload = payloads[capability]
         locator, output_digest = _write_content_addressed_output(
             project_root,
@@ -463,8 +673,20 @@ def verify_lean_obligation(
                 verifier=request["verifiers"][capability],
                 checked_at=checked_at,
                 output_locator=locator,
-                command=payload["build"]["argv"] if capability == "kernel_check" else payload["axiom_command"]["argv"],
-                command_exit_code=payload["build"]["exit_code"] if capability == "kernel_check" else payload["axiom_command"]["exit_code"],
+                command=(
+                    payload["build"]["argv"]
+                    if capability == "kernel_check"
+                    else payload["identity_command"]["argv"]
+                    if capability in ("statement_identity", "statement_faithfulness")
+                    else payload["axiom_command"]["argv"]
+                ),
+                command_exit_code=(
+                    payload["build"]["exit_code"]
+                    if capability == "kernel_check"
+                    else payload["identity_command"]["exit_code"]
+                    if capability in ("statement_identity", "statement_faithfulness")
+                    else payload["axiom_command"]["exit_code"]
+                ),
                 native_status=native_status,
                 inputs=inputs,
                 toolchain=toolchain_record,
@@ -494,6 +716,14 @@ def verify_lean_obligation(
     return {
         "native_status": native_status,
         "toolchain_admission_status": "admitted" if admitted else "unadmitted",
+        "admission_status": (
+            "requires_migration"
+            if legacy_alias
+            else "eligible"
+            if all(decisions.values())
+            else "not_admitted"
+        ),
+        "legacy_alias_status": "requires_migration" if legacy_alias else "not_used",
         "decisions": decisions,
         "reports": payloads,
         "receipts": receipts,

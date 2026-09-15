@@ -12,7 +12,6 @@ description: "数学研究任务路由器。用户提出找问题、查文献、
 - 用户提出开放式数学问题，但尚未说明需要检索、推导、计算还是证明。
 - 输入混合了论文、公式、猜想和代码，需要先决定当前最短验证路径。
 - 用户问“下一步该做什么”或“该用哪个数学 skill”。
-- 已有 active ProblemContract，但结果目标空间、候选 Outcome 分类或并行 frontier 尚不清楚。
 
 ## Not For / Boundaries
 
@@ -22,21 +21,19 @@ description: "数学研究任务路由器。用户提出找问题、查文献、
 - 调研到的工具只有达到对应运行时准入状态后才能路由；`surveyed/source_locked` 不等于 installed 或 verifier-admitted。
 - 不因输出文件类型选择路线；按当前阻塞选择。
 - 用户要求持续推进时仍只选一个 owner skill 和一个 worker；“无限持久攻坚”表示 checkpoint 驱动的 bounded steps，不表示并行工厂、无界命令或自动重复发送 Goal。
-- `outcome-space-search` 只为 active ProblemContract 生成 candidate-only Outcome plan 和 frontier 建议；它不是 Job scheduler，不授权并发，也不关闭 Outcome/Result。
 
 ## Quick Reference
 
 ```text
 CandidateObservation/缺少 ProblemContract -> math-discovery
 缺少问题边界/前人工作 -> math-discovery
-已有 active contract，但不清楚攻击哪些结果目标 -> outcome-space-search
 公式对象、假设或近似不清 -> math-derivation
 需要精确计算、数值实验、反例搜索 -> math-computation
 需要定理证明、补步骤、攻击证明 -> math-proof
 需要 Lean/内核级验证 -> math-formalization
 ```
 
-路由输出必须包含：当前阶段、主 skill、选择理由、必需输入、停止条件、唯一下一步。若选择 `outcome-space-search`，输出的是一个 bounded candidate frontier；每条 lane 后续仍需单独选择一个执行 owner，不能在同一调用中全部启动。
+路由输出必须包含：当前阶段、主 skill、选择理由、必需输入、停止条件、唯一下一步。
 
 ## Reuse-first 数学知识路由
 
@@ -59,11 +56,6 @@ CandidateObservation/缺少 ProblemContract -> math-discovery
 - 动作：选择 `math-formalization` 并先运行工具预检。
 - 验收：Lean 缺失时状态为 blocked/calibration，不伪造 kernel-check。
 
-### Example 4：结果目标空间不清
-- 输入：一个 active ProblemContract，用户希望并行寻找完整证明、特殊情形、结构引理和反例方向。
-- 动作：选择 `outcome-space-search`，先做 scope-aware Outcome 分解、失败路线去重和 frontier 选择。
-- 验收：只生成 candidate plan；没有启动 Job、没有授权并发、没有更新 Result。
-
 ## References
 
 - `references/source-map.md`：项目 owner 映射来源。
@@ -72,5 +64,18 @@ CandidateObservation/缺少 ProblemContract -> math-discovery
 ## Maintenance
 
 - Sources：本项目 owner mapping 与供应链审计结果。
-- Last updated：2026-09-07。
+- Last updated：2026-09-05。
 - Verification：`python3 scripts/validate_project.py`。
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+继承 `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md`：按 D01–D11 定位当前阶段，一次只路由一个最短可验证义务；Router 不得把 Job、会话、PR 或 verifier 成功自动解释为 Result 准入。
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+继承 `governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md`。每个 active Problem 的首个计划必须路由出 formalization readiness：给出 expected statement、proof assistant profile 与最小可验证义务，或记录精确 obstruction。不能等自然语言 proof 宣称完成后才考虑形式化；也不能因 Lean 暂不可用而阻止 discovery/探索或把 blocker 当反例。
+- 已有 active ProblemContract，但结果目标空间、候选 Outcome 分类或并行 frontier 尚不清楚。
+- `outcome-space-search` 只为 active ProblemContract 生成 candidate-only Outcome plan 和 frontier 建议；它不是 Job scheduler，不授权并发，也不关闭 Outcome/Result。
+已有 active contract，但不清楚攻击哪些结果目标 -> outcome-space-search
+路由输出必须包含：当前阶段、主 skill、选择理由、必需输入、停止条件、唯一下一步。若选择 `outcome-space-search`，输出的是一个 bounded candidate frontier；每条 lane 后续仍需单独选择一个执行 owner，不能在同一调用中全部启动。
+### Example 4：结果目标空间不清
+- 输入：一个 active ProblemContract，用户希望并行寻找完整证明、特殊情形、结构引理和反例方向。
+- 动作：选择 `outcome-space-search`，先做 scope-aware Outcome 分解、失败路线去重和 frontier 选择。
+- 验收：只生成 candidate plan；没有启动 Job、没有授权并发、没有更新 Result。
+- Last updated：2026-09-07。

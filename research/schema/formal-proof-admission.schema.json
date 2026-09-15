@@ -1,0 +1,88 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/formal-proof-admission.v1.json",
+  "title": "Vibe Mathing Formal Proof Admission Decision",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "admission_id",
+    "receipt_type",
+    "subject",
+    "gates",
+    "identity_check",
+    "digest_check",
+    "verdict",
+    "admitted",
+    "reasons",
+    "decider",
+    "decided_at",
+    "capability_boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "admission_id": {"type": "string", "pattern": "^formal-admission:[a-z0-9][a-z0-9.-]*$"},
+    "receipt_type": {"const": "formal_proof_admission"},
+    "subject": {"$ref": "#/$defs/subject"},
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kernel", "axiom_audit", "statement_faithfulness"],
+      "properties": {
+        "kernel": {"$ref": "#/$defs/gate"},
+        "axiom_audit": {"$ref": "#/$defs/gate"},
+        "statement_faithfulness": {"$ref": "#/$defs/gate"}
+      }
+    },
+    "identity_check": {"$ref": "#/$defs/check"},
+    "digest_check": {"$ref": "#/$defs/check"},
+    "proof_source_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "verdict": {"enum": ["accept", "reject", "undetermined"]},
+    "admitted": {"type": "boolean"},
+    "reasons": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "decider": {"type": "string", "minLength": 1},
+    "decided_at": {"type": "string", "format": "date-time"},
+    "capability_boundary": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["problem_id", "attempt_id", "candidate_id", "obligation_id", "problem_contract_sha256", "statement_sha256", "formal_statement_sha256"],
+      "properties": {
+        "problem_id": {"type": ["string", "null"]},
+        "attempt_id": {"type": ["string", "null"]},
+        "candidate_id": {"type": ["string", "null"]},
+        "obligation_id": {"type": ["string", "null"]},
+        "problem_contract_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "statement_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "formal_statement_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "receipt_id", "reason"],
+      "properties": {
+        "status": {"enum": ["pass", "fail", "needs_review", "missing", "tool_error", "undetermined"]},
+        "receipt_id": {"type": ["string", "null"]},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "check": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "expected", "observed", "mismatches"],
+      "properties": {
+        "status": {"enum": ["pass", "fail", "needs_review"]},
+        "expected": {"type": "object", "additionalProperties": true},
+        "observed": {"type": "object", "additionalProperties": true},
+        "mismatches": {"type": "array", "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

@@ -11,21 +11,33 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from vibe_mathing.bundle import BundleConflict, derive_research_bundle
-from vibe_mathing.evidence import create_obligation_evidence_receipt
+from vibe_mathing.evidence import (
+    EvidenceError,
+    create_obligation_evidence_receipt,
+    verify_obligation_evidence_receipt,
+)
 from vibe_mathing.lean_obligation import (
+    LeanObligationError,
+    _bind_expected_declaration,
+    _native_input_admitted,
     _toolchain_fingerprint,
+    _trusted_challenge,
     verify_lean_obligation,
 )
 from vibe_mathing.obligations import (
+    ObligationError,
     canonical_json_sha256,
     derive_obligation_closure,
+    load_obligation_state,
     statement_sha256,
     validate_obligation_records,
 )
 from vibe_mathing.runtime import RuntimeErrorBase, execute_bounded
 from vibe_mathing.semantic_review import create_semantic_review_evidence
+from vibe_mathing.store import StoreError
 
 from validate_research_spaces import qualifies_as_solution
 
@@ -35,6 +47,7 @@ STAMP = "2026-09-05T00:00:00Z"
 SCHEMAS = (
     "attempt.schema.json",
     "candidate-artifact.schema.json",
+    "candidate-lineage-event.schema.json",
     "evidence-link.schema.json",
     "evidence-receipt.schema.json",
     "lean-obligation-request.schema.json",
@@ -90,6 +103,27 @@ def base_registry(extra: list[dict] | None = None) -> dict:
             "trust_domain": "semantic-review",
             "policy": "structured-semantic-review-v1",
             "capabilities": ["statement_faithfulness"],
+        },
+        {
+            "id": "synthetic-statement-identity",
+            "role": "verifier",
+            "trust_domain": "formal-identity",
+            "policy": "test-fixture-v1",
+            "capabilities": ["statement_identity"],
+        },
+        {
+            "id": "synthetic-toolchain-freshness",
+            "role": "verifier",
+            "trust_domain": "toolchain-governance",
+            "policy": "test-fixture-v1",
+            "capabilities": ["toolchain_freshness"],
+        },
+        {
+            "id": "synthetic-external-replay",
+            "role": "verifier",
+            "trust_domain": "external-proof-replay",
+            "policy": "test-fixture-v1",
+            "capabilities": ["proof_replay_check"],
         },
     ]
     principals.extend(extra or [])
@@ -180,6 +214,12 @@ def prepare_project(root: Path, *, registry: dict | None = None) -> dict:
         {"schema_version": "2.0.0", "result_ids": []},
     )
     write_json(root / "research/verifiers.json", registry or base_registry())
+    control = root / "governance/control-plane"
+    control.mkdir(parents=True, exist_ok=True)
+    shutil.copy2(
+        ROOT / "governance/control-plane/lean-toolchain-lock.v1.json",
+        control / "lean-toolchain-lock.v1.json",
+    )
     return {"problem": value, "attempt": attempt, "contract_digest": contract_digest}
 
 
@@ -252,6 +292,7 @@ def make_candidate(root: Path, graph: dict, obligation_id: str, kind: str) -> di
         "obligation_id": obligation_id,
         "problem_id": graph["problem_id"],
         "attempt_id": graph["attempt_id"],
+        "problem_contract_sha256": graph["problem_contract_sha256"],
         "statement_sha256": obligation["statement_sha256"],
         "kind": kind,
         "generator": "web-generator",
@@ -347,11 +388,83 @@ def close_candidates(root: Path, graph: dict, candidates: list[dict]) -> list[di
             )
         )
         links.append(semantic_link(root, graph, candidate))
+        if candidate["kind"] in {"proof", "formalization"}:
+            links.append(evidence_link(root, graph, candidate, "statement_identity", "synthetic-statement-identity"))
+            links.append(evidence_link(root, graph, candidate, "toolchain_freshness", "synthetic-toolchain-freshness"))
+            links.append(evidence_link(root, graph, candidate, "proof_replay_check", "synthetic-external-replay"))
     write_jsonl(root / "research/records/evidence-links.jsonl", links)
     return links
 
 
 class ObligationHarnessTest(unittest.TestCase):
+    def test_expected_declaration_must_match_frozen_obligation(self) -> None:
+        obligation = {
+            "statement": {"formal_declaration": "theorem target : True"}
+        }
+        _bind_expected_declaration(obligation, "theorem target : True")
+        with self.assertRaises(LeanObligationError):
+            _bind_expected_declaration(obligation, "theorem target : False")
+
+    def test_untrusted_generator_cannot_self_authorize_native_execution(self) -> None:
+        registry = {
+            "web-generator": {"role": "generator", "trust_domain": "web"},
+            "trusted-fixture": {
+                "role": "generator",
+                "trust_domain": "trusted-fixture",
+                "native_input_trust": "trusted_fixture_native",
+                "trusted_challenge_allowlist": ["a" * 64],
+            },
+        }
+        self.assertFalse(
+            _native_input_admitted(
+                registry,
+                {"generator": "web-generator"},
+                "trusted_fixture_native",
+                "a" * 64,
+            )
+        )
+        self.assertTrue(
+            _native_input_admitted(
+                registry,
+                {"generator": "trusted-fixture"},
+                "trusted_fixture_native",
+                "a" * 64,
+            )
+        )
+        self.assertFalse(
+            _native_input_admitted(
+                registry,
+                {"generator": "trusted-fixture"},
+                "trusted_fixture_native",
+                "b" * 64,
+            )
+        )
+
+    def test_trusted_challenge_is_separate_and_content_addressed(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            fixture = Path(directory)
+            candidate = fixture / "Candidate.lean"
+            challenge = fixture / "TrustedChallenge.lean"
+            candidate.write_text("theorem candidate : True := True.intro\n", encoding="utf-8")
+            challenge.write_text("def Trusted.statement : Prop := True\n", encoding="utf-8")
+            config = {
+                "source_file": "TrustedChallenge.lean",
+                "module": "TrustedChallenge",
+                "statement_constant": "Trusted.statement",
+                "sha256": hashlib.sha256(challenge.read_bytes()).hexdigest(),
+            }
+            self.assertEqual(
+                _trusted_challenge(fixture, [candidate], config),
+                challenge,
+            )
+            challenge.write_text("def Trusted.statement : Prop := False\n", encoding="utf-8")
+            with self.assertRaises(LeanObligationError):
+                _trusted_challenge(fixture, [candidate], config)
+            config["source_file"] = "Candidate.lean"
+            config["sha256"] = hashlib.sha256(candidate.read_bytes()).hexdigest()
+            with self.assertRaises(LeanObligationError):
+                _trusted_challenge(fixture, [candidate], config)
+
     def test_normal_and_dag_closure_result_and_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -486,6 +599,92 @@ class ObligationHarnessTest(unittest.TestCase):
             self.assertIn("candidate:root-proof", closure["stale_candidate_ids"])
             self.assertTrue(closure["stale_evidence_link_ids"])
 
+    def test_lineage_status_blocks_closure_result_and_bundle_for_all_event_types(self) -> None:
+        event_cases = ("supersedes", "retracts", "invalidates")
+        for event_type in event_cases:
+            with self.subTest(event_type=event_type), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                context = prepare_project(root)
+                graph = make_graph(context, {"obligation:root": []})
+                install_graph(root, graph)
+                old = make_candidate(root, graph, "obligation:root", "proof")
+                links = close_candidates(root, graph, [old])
+                candidates = [old]
+                if event_type in {"supersedes", "invalidates"}:
+                    successor = copy.deepcopy(old)
+                    successor["candidate_id"] = f"candidate:root-proof-{event_type}"
+                    locator = f"research/artifacts/candidates/root-proof-{event_type}.txt"
+                    artifact = root / locator
+                    artifact.write_text(successor["candidate_id"] + "\\n", encoding="utf-8")
+                    successor["artifact"] = {
+                        "locator": locator,
+                        "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
+                        "media_type": "text/plain",
+                    }
+                    candidates.append(successor)
+                    source = {"kind": "candidate", "id": successor["candidate_id"]}
+                    target = {"kind": "candidate", "id": old["candidate_id"]}
+                else:
+                    source = {"kind": "evidence_link", "id": links[0]["evidence_link_id"]}
+                    target = {"kind": "candidate", "id": old["candidate_id"]}
+                write_jsonl(root / "research/records/candidate-artifacts.jsonl", candidates)
+                lineage_event = {
+                    "schema_version": "1.0.0",
+                    "event_id": f"lineage-event:{event_type}-root",
+                    "event_type": event_type,
+                    "graph_id": graph["graph_id"],
+                    "problem_id": graph["problem_id"],
+                    "attempt_id": graph["attempt_id"],
+                    "obligation_id": "obligation:root",
+                    "source": source,
+                    "target": target,
+                    "reason": f"synthetic {event_type}",
+                    "created_at": "2026-09-05T00:00:01Z",
+                }
+                write_jsonl(
+                    root / "research/records/candidate-lineage-events.jsonl",
+                    [lineage_event],
+                )
+
+                closure = derive_obligation_closure(root, graph["graph_id"])
+                self.assertEqual(closure["root_status"], "open")
+                self.assertIn(old["candidate_id"], closure["stale_candidate_ids"])
+                self.assertEqual(
+                    set(closure["stale_evidence_link_ids"]),
+                    {item["evidence_link_id"] for item in links},
+                )
+                result = {
+                    "result_id": f"result:lineage-{event_type}",
+                    "problem_id": graph["problem_id"],
+                    "attempt_id": graph["attempt_id"],
+                    "obligation_graph_id": graph["graph_id"],
+                    "root_obligation_id": graph["root_obligation_id"],
+                    "statement_sha256": graph["obligations"][0]["statement_sha256"],
+                    "evidence_link_ids": [item["evidence_link_id"] for item in links],
+                    "kind": "proof",
+                    "claim": "Historical synthetic proof, withdrawn after lineage event.",
+                    "scope": "the frozen synthetic ProblemContract",
+                    "outcome": "withdrawn",
+                    "evidence": [],
+                    "created_at": STAMP,
+                }
+                active_result = copy.deepcopy(result)
+                active_result["outcome"] = "established"
+                write_jsonl(root / "result-library/records/results.jsonl", [active_result])
+                attempts = {context["attempt"]["attempt_id"]: context["attempt"]}
+                self.assertFalse(qualifies_as_solution(active_result, attempts, project_root=root))
+                with self.assertRaises(StoreError):
+                    derive_research_bundle(root, graph["problem_id"])
+
+                write_jsonl(root / "result-library/records/results.jsonl", [result])
+                self.assertFalse(qualifies_as_solution(result, attempts, project_root=root))
+                bundle = derive_research_bundle(root, graph["problem_id"])
+                self.assertEqual(bundle["disposition"], "open")
+                self.assertEqual(bundle["solution_view"], [])
+                exported_candidates = bundle["obligation_graphs"][0]["candidates"]
+                self.assertNotIn(old["candidate_id"], {item["candidate_id"] for item in exported_candidates})
+                self.assertEqual(bundle["obligation_graphs"][0]["evidence_links"], [])
+
     def test_proof_counterexample_conflict_blocks_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -529,6 +728,37 @@ class ObligationHarnessTest(unittest.TestCase):
                 self.assertNotEqual(outcome["exit_code"], 0)
                 self.assertIn("MemoryError", outcome["stderr"])
 
+    def test_candidate_contract_digest_is_required_and_registry_independent(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            context = prepare_project(root)
+            graph = make_graph(context, {"obligation:root": []})
+            install_graph(root, graph)
+            candidate = make_candidate(root, graph, "obligation:root", "proof")
+            ledger = root / "research/records/candidate-artifacts.jsonl"
+
+            write_jsonl(ledger, [candidate])
+            loaded = load_obligation_state(root)
+            self.assertEqual(
+                loaded["candidates"][candidate["candidate_id"]]["problem_contract_sha256"],
+                context["contract_digest"],
+            )
+
+            for label, mutate, needle in (
+                ("missing", lambda value: value.pop("problem_contract_sha256"), "schema"),
+                ("foreign", lambda value: value.__setitem__("problem_contract_sha256", "f" * 64), "ProblemContract"),
+            ):
+                with self.subTest(label=label):
+                    bad = copy.deepcopy(candidate)
+                    mutate(bad)
+                    write_jsonl(ledger, [bad])
+                    with patch(
+                        "vibe_mathing.obligations.load_verifier_registry",
+                        side_effect=AssertionError("contract failure reached registry lookup"),
+                    ):
+                        with self.assertRaisesRegex(ObligationError, needle):
+                            load_obligation_state(root)
+
     def test_lean_exit_zero_with_sorry_does_not_close(self) -> None:
         if shutil.which("lake") is None or shutil.which("lean") is None:
             self.skipTest("fixed Lean/Lake toolchain is not installed in this portable test job")
@@ -558,6 +788,14 @@ class ObligationHarnessTest(unittest.TestCase):
                 "end ObligationFixture\n",
                 encoding="utf-8",
             )
+            challenge = fixture / "ObligationFixture/TrustedChallenge.lean"
+            challenge.parent.mkdir(parents=True)
+            challenge.write_text(
+                "namespace ObligationTrustedChallenge\n"
+                "def statement : Prop := True\n"
+                "end ObligationTrustedChallenge\n",
+                encoding="utf-8",
+            )
             candidate = {
                 "schema_version": "1.0.0",
                 "candidate_id": "candidate:lean-sorry-proof",
@@ -565,9 +803,10 @@ class ObligationHarnessTest(unittest.TestCase):
                 "obligation_id": "obligation:root",
                 "problem_id": graph["problem_id"],
                 "attempt_id": graph["attempt_id"],
+                "problem_contract_sha256": graph["problem_contract_sha256"],
                 "statement_sha256": root_card["statement_sha256"],
                 "kind": "formalization",
-                "generator": "web-generator",
+                "generator": "trusted-lean-fixture-generator",
                 "artifact": {
                     "locator": source.relative_to(root).as_posix(),
                     "sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
@@ -581,10 +820,21 @@ class ObligationHarnessTest(unittest.TestCase):
             allowlist = [{"id": "lean", "version": toolchain, "fingerprint": fingerprint}]
             generic = [
                 {
+                    "id": "trusted-lean-fixture-generator",
+                    "role": "generator",
+                    "trust_domain": "trusted-lean-fixture",
+                    "policy": None,
+                    "capabilities": [],
+                    "native_input_trust": "trusted_fixture_native",
+                    "trusted_challenge_allowlist": [
+                        hashlib.sha256(challenge.read_bytes()).hexdigest()
+                    ],
+                },
+                {
                     "id": "generic-lean-kernel",
                     "role": "verifier",
                     "trust_domain": "lean-kernel",
-                    "policy": "lean-obligation-kernel-v1",
+                    "policy": "lean-obligation-kernel-v2-trusted-challenge-fresh-recheck",
                     "capabilities": ["kernel_check"],
                     "toolchain_allowlist": allowlist,
                 },
@@ -600,12 +850,16 @@ class ObligationHarnessTest(unittest.TestCase):
                     "id": "generic-lean-statement",
                     "role": "verifier",
                     "trust_domain": "lean-statement",
-                    "policy": "lean-obligation-statement-v1",
-                    "capabilities": ["statement_identity"],
+                    "policy": "lean-obligation-statement-v2-typed-trusted-challenge",
+                    "capabilities": ["statement_identity", "statement_faithfulness"],
                     "toolchain_allowlist": allowlist,
                 },
             ]
             write_json(root / "research/verifiers.json", base_registry(generic))
+            synthetic_lock_path = root / "governance/control-plane/lean-toolchain-lock.v1.json"
+            synthetic_lock = json.loads(synthetic_lock_path.read_text(encoding="utf-8"))
+            synthetic_lock["qualification"]["native_kernel_route"] = "qualified"
+            write_json(synthetic_lock_path, synthetic_lock)
             request = {
                 "schema_version": "1.0.0",
                 "graph_id": graph["graph_id"],
@@ -616,6 +870,13 @@ class ObligationHarnessTest(unittest.TestCase):
                 "source_files": ["ObligationFixture.lean"],
                 "declaration": "ObligationFixture.target",
                 "expected_declaration": "theorem target : True",
+                "execution_profile": "trusted_fixture_native",
+                "trusted_challenge": {
+                    "source_file": "ObligationFixture/TrustedChallenge.lean",
+                    "module": "ObligationFixture.TrustedChallenge",
+                    "statement_constant": "ObligationTrustedChallenge.statement",
+                    "sha256": hashlib.sha256(challenge.read_bytes()).hexdigest(),
+                },
                 "allowed_axioms": [],
                 "budgets": {
                     "timeout_seconds": 120,
@@ -631,12 +892,32 @@ class ObligationHarnessTest(unittest.TestCase):
             report = verify_lean_obligation(project_root=root, request=request)
             self.assertTrue(report["decisions"]["kernel_check"], report)
             self.assertFalse(report["decisions"]["axiom_escape_audit"])
+            self.assertTrue(report["reports"]["kernel_check"]["inputs_stable"])
+            self.assertEqual(
+                report["reports"]["kernel_check"]["execution_profile"],
+                "trusted_fixture_native",
+            )
+            self.assertEqual(
+                report["reports"]["kernel_check"]["native_rechecker_trust_domain"],
+                "lean-kernel",
+            )
             write_jsonl(
                 root / "research/records/evidence-links.jsonl",
                 report["evidence_links"],
             )
             closure = derive_obligation_closure(root, graph["graph_id"])
             self.assertEqual(closure["root_status"], "open")
+            challenge.write_text(
+                challenge.read_text(encoding="utf-8") + "\n-- post-receipt drift\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(EvidenceError, "input SHA-256"):
+                verify_obligation_evidence_receipt(
+                    project_root=root,
+                    graph=graph,
+                    candidate=candidate,
+                    link=report["evidence_links"][0],
+                )
 
 
 if __name__ == "__main__":

@@ -13,7 +13,9 @@ from typing import Any
 
 from jsonschema import Draft202012Validator, FormatChecker
 
+from validate_formal_verification_infrastructure import validate as validate_formal_verification
 from validate_mathematical_reasoning_discipline import validate as validate_reasoning_discipline
+from validate_verified_ai_math_research_foundation import validate as validate_research_foundation
 from vibe_mathing.reasoning import strip_reasoning_agent_overlay
 from vibe_mathing.web_channel import (
     canonical_json_sha256,
@@ -54,6 +56,14 @@ REQUIRED_CONTROL_FILES = {
     "result-library/records/results.jsonl",
     "governance/control-plane/mathematical-reasoning-discipline.schema.json",
     "governance/control-plane/mathematical-reasoning-discipline.v1.json",
+    "governance/control-plane/verified-ai-math-research-foundation.schema.json",
+    "governance/control-plane/verified-ai-math-research-foundation.v1.json",
+    "governance/control-plane/formal-verification-infrastructure.schema.json",
+    "governance/control-plane/formal-verification-infrastructure.v1.json",
+    "governance/control-plane/lean-toolchain-lock.schema.json",
+    "governance/control-plane/lean-toolchain-lock.v1.json",
+    "governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md",
+    "governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md",
     "governance/control-plane/math-knowledge-source.v1.json",
     "governance/control-plane/math-knowledge-operators.v1.json",
     "governance/control-plane/harness-source-manifest.v1.json",
@@ -61,11 +71,16 @@ REQUIRED_CONTROL_FILES = {
     "governance/control-plane/container-skill-source-lock.v1.json",
     "governance/control-plane/container-skill-source-lock.v1.schema.json",
     "governance/control-plane/harness-snapshot-manifest.v1.schema.json",
+    "scripts/build_problem_repository.py",
+    "scripts/build_web_context_bundle.py",
+    "scripts/sync_problem_repository_harness.py",
     "governance/control-plane/harness-snapshot-history.v1.schema.json",
     "scripts/build_problem_repository.py",
     "scripts/build_web_context_bundle.py",
     "scripts/sync_problem_repository_harness.py",
     "scripts/validate_mathematical_reasoning_discipline.py",
+    "scripts/validate_verified_ai_math_research_foundation.py",
+    "scripts/validate_formal_verification_infrastructure.py",
     "scripts/validate_math_knowledge_registry.py",
     "scripts/validate_web_problem_harness.py",
     "scripts/validate_web_attempt.py",
@@ -102,6 +117,14 @@ def tree_digest(files: list[dict[str, Any]]) -> str:
 
 def content_snapshot(root: Path) -> dict[str, Any]:
     files = [path for path in sorted(root.rglob("*")) if path.is_file() and not path.is_symlink()]
+    rows = [
+        {
+            "path": path.relative_to(root).as_posix(),
+            "bytes": path.stat().st_size,
+            "sha256": sha256_file(path),
+        }
+        for path in files
+    ]
     rows = []
     for path in files:
         relative = path.relative_to(root).as_posix()
@@ -126,6 +149,14 @@ def validate(root: Path) -> list[str]:
         if not path.is_file() or path.is_symlink():
             errors.append(f"required regular file missing: {relative}")
     errors.extend(f"reasoning discipline: {message}" for message in validate_reasoning_discipline(root))
+    errors.extend(
+        f"verified research foundation: {message}"
+        for message in validate_research_foundation(root, [Path("result-library/records/results.jsonl")])
+    )
+    errors.extend(
+        f"formal verification infrastructure: {message}"
+        for message in validate_formal_verification(root)
+    )
 
     try:
         snapshot = load_json(root / "HARNESS_SNAPSHOT.json")
@@ -228,6 +259,8 @@ def validate(root: Path) -> list[str]:
         profile_schema = root / "governance/control-plane/web-research-channel.schema.json"
         errors.extend(f"web profile schema: {message}" for message in validate_schema(profile, profile_schema))
         output_contract = load_json(root / "WEB_OUTPUT_CONTRACT.json")
+        if output_contract.get("schema_version") != "1.2.0":
+            errors.append("WEB_OUTPUT_CONTRACT schema version drift")
         if output_contract.get("channel") != profile.get("channel_id"):
             errors.append("WEB_OUTPUT_CONTRACT channel mismatch")
         if output_contract.get("allowed_write_paths") != profile.get("allowed_repository_write_paths"):
@@ -238,6 +271,67 @@ def validate(root: Path) -> list[str]:
             errors.append("WEB_OUTPUT_CONTRACT autonomy policy drift")
         if output_contract.get("repository_scope_policy") != profile.get("repository_scope_policy"):
             errors.append("WEB_OUTPUT_CONTRACT repository scope policy drift")
+        expected_foundation = {
+            "id": "verified-ai-math-research-foundation:v1",
+            "marker": "VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1",
+            "metamodel_root": "PLFB",
+            "loop_stages": [f"D{index:02d}" for index in range(1, 12)],
+            "state_layers": ["generation", "verification", "admission", "mathematical_conclusion"],
+            "automatic_result_promotion": False,
+            "conflict_policy": "freeze",
+        }
+        if output_contract.get("foundation_policy") != expected_foundation:
+            errors.append("WEB_OUTPUT_CONTRACT verified research foundation drift")
+        lean_lock = load_json(root / "governance/control-plane/lean-toolchain-lock.v1.json")
+        lean_qualification = lean_lock["qualification"]
+        harness_release_eligible = lean_qualification.get("native_kernel_route") == "qualified"
+        expected_formal_verification = {
+            "id": "formal-verification-infrastructure:v1",
+            "marker": "FORMAL_VERIFICATION_INFRASTRUCTURE_V1",
+            "formal_verification_role": "mandatory_cross_face_infrastructure",
+            "lean_role": "default_reference_kernel_and_required_compatibility_lane",
+            "lean_lock": "governance/control-plane/lean-toolchain-lock.v1.json",
+            "universal_formalization_readiness_required": True,
+            "universal_lean_execution_required": False,
+            "native_kernel_evidence_ceiling": "supported",
+            "unreviewed_ai_lean_source_trust": "potentially_malicious",
+            "trusted_challenge_authority": "verifier_side_only",
+            "candidate_challenge_source_separation_required": True,
+            "statement_identity_method": "trusted_typed_probe",
+            "string_identity_has_admission_power": False,
+            "native_execution_profile": "trusted_fixture_native",
+            "native_challenge_allowlist_required": True,
+            "native_fresh_replay_trust_domain": "lean-kernel",
+            "native_fresh_replay_is_proof_replay_check": False,
+            "external_replay_requirements": [
+                "fixed_checker_exporter_runner_config",
+                "candidate_sandbox",
+                "different_verifier_and_trust_domain",
+                "fresh_digest_bound_receipt",
+                "export_coverage_and_statement_correspondence",
+            ],
+            "terminal_proof_requires": [
+                "kernel_check",
+                "axiom_escape_audit",
+                "statement_identity",
+                "statement_faithfulness",
+                "toolchain_freshness",
+                "proof_replay_check",
+            ],
+            "terminal_counterexample_requires": [
+                "counterexample_check",
+                "statement_identity",
+                "statement_faithfulness",
+            ],
+            "failed_or_unqualified_route_status": "blocked_or_undetermined",
+            "native_route_qualification": lean_qualification["native_kernel_route"],
+            "adversarial_route_qualification": lean_qualification["adversarial_high_assurance_route"],
+            "harness_release_eligible": harness_release_eligible,
+            "harness_release_blocker": None if harness_release_eligible else "lean_authoritative_validation_not_qualified",
+            "web_may_sign_verifier_capabilities": False,
+        }
+        if output_contract.get("formal_verification_policy") != expected_formal_verification:
+            errors.append("WEB_OUTPUT_CONTRACT formal verification policy drift")
         expected_maintenance = {
             "branch_prefix": "maintenance/harness-",
             "trusted_actors": ["vibemathing"],
@@ -341,6 +435,7 @@ def validate(root: Path) -> list[str]:
     expected_skill_ids = set(expected_skill_status)
     actual_skill_ids = {item.get("skill_id") for item in active.get("skills", []) if isinstance(item, dict)}
     if actual_skill_ids != expected_skill_ids:
+        errors.append(f"WEB_ACTIVE_SKILLS must contain exactly the 8 admitted Web research Skills: {sorted(actual_skill_ids)}")
         errors.append(f"WEB_ACTIVE_SKILLS must contain exactly the 9 bundled Web research Skills: {sorted(actual_skill_ids)}")
     for item in active.get("skills", []):
         if isinstance(item, dict) and item.get("skill_id") in expected_skill_status:

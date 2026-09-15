@@ -6,6 +6,10 @@
 
 Runtime adapters and gates inherit `governance/standards/MATHEMATICAL_REASONING_DISCIPLINE.md`. They must preserve frozen statement/quantifier identity, dependency and witness bindings, exact execution scope, termination/resource limits and evidence ceilings; they must reject attempts to promote finite checks, invalid induction/contraposition, transport state, or unfaithful formalizations into mathematical closure.
 
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+
+Runtime admission inherits `FORMAL_VERIFICATION_INFRASTRUCTURE_V1` and must consume `formal_assurance.py` as the shared typed terminal profile. Lean adapters must separate Candidate source from content-addressed verifier-side challenge, establish statement identity through Lean type checking, and record native fresh replay without changing its `lean-kernel` trust domain. Native Lean remains `supported`; proof terminal admission additionally requires freshness and sandbox-external replay. Counterexamples use their own typed profile and do not acquire a fictitious Lean requirement.
+
 本目录只实现单机可信研究闭环的连接层：证据解析、原子存储、状态机、确定性 adapter 与 CLI。数学事实仍由三张 JSONL 真相源和派生 Solution View 管理。
 
 ## 目录结构
@@ -15,11 +19,13 @@ scripts/vibe_mathing/
 ├── AGENTS.md      # 包边界与维护规则
 ├── __init__.py    # 稳定公共入口
 ├── evidence.py    # 可信根、回执、摘要和 verifier registry
+├── formal_assurance.py # proof/counterexample typed terminal capability profiles
 ├── bundle.py      # 一致快照上的 ResearchBundle 纯派生与冲突守门
 ├── store.py       # JSONL 唯一 writer、flock、WAL 与原子恢复
 ├── runtime.py     # 有限状态机、预算、checkpoint 与有界子进程
 ├── pipeline.py    # 确定性 SymPy 候选、验证和晋升编排
-├── lean.py        # 固定 Lean/Mathlib kernel、逃逸与公理审计
+├── lean.py        # 固定 Lean/Mathlib、trusted challenge、native replay 与公理审计
+├── lean_replay.py # Comparator/external-checker receipt 的 blocked-route admission checks
 ├── literature.py  # provider registry、脱敏请求和显式 live health
 └── smt.py         # SymPy 命题 SAT/QF-LRA 与精确 witness verifier
 ```

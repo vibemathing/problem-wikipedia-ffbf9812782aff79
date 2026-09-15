@@ -1,6 +1,6 @@
 {
   "schema_version": "math-tool-maturity.v1",
-  "as_of": "2026-09-01",
+  "as_of": "2026-09-08",
   "states": [
     "surveyed",
     "source_locked",
@@ -208,15 +208,16 @@
       "maturity": "verifier_admitted",
       "runtime_route": "verifier",
       "admitted_components": [
-        "Lean 4 kernel check with axiom and statement-faithfulness gates"
+        "Lean 4.33.1/Mathlib v4.33.1 native kernel check with trusted challenge, typed statement identity, axiom/escape audit, native fresh replay and toolchain-freshness gates"
       ],
       "evidence_refs": [
         "governance/tasks/0002-survey-vibe-mathing-practices/RESEARCH_INVENTORY.md#T18",
         "scripts/test_lean_pipeline.py",
         "fixtures/lean-proof/lakefile.toml",
-        "scripts/test_evidence_attacks.py"
+        "scripts/test_evidence_attacks.py",
+        "governance/operations/check-reports/2026-09-09-lean-authoritative-pipeline-calibration.json"
       ],
-      "reason": "The project admits only the tested Lean kernel adapter and its axiom, freshness, and statement-faithfulness gates."
+      "reason": "TASK-0034 calibration and evidence-path regression passed for the exact Lean 4.33.1/Mathlib v4.33.1 trusted fixture route. The native route is verifier-admitted only up to supported evidence. Statement faithfulness remains independent, and adversarial terminal proof admission stays blocked until a sandboxed Comparator plus an admitted external checker provide proof_replay_check."
     },
     {
       "tool_id": "T19",

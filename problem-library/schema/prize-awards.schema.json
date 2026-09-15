@@ -1,0 +1,102 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/prize-awards.schema.json",
+  "title": "Problem source prize registry",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "awards"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri"
+    },
+    "schema_version": {
+      "const": "problem-prize-registry.v1"
+    },
+    "awards": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "$ref": "#/$defs/award"
+      }
+    }
+  },
+  "$defs": {
+    "award": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "award_id",
+        "source",
+        "record_scope",
+        "source_native_ids",
+        "source_status_raw",
+        "source_status_class",
+        "prize_currency",
+        "prize_usd_each",
+        "scope",
+        "evidence"
+      ],
+      "properties": {
+        "award_id": {
+          "pattern": "^[a-z][a-z0-9-]{2,63}$",
+          "type": "string"
+        },
+        "source": {
+          "pattern": "^[a-z][a-z0-9_]{1,63}$",
+          "type": "string"
+        },
+        "record_scope": {
+          "const": "problem_page"
+        },
+        "source_native_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "source_status_raw": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_status_class": {
+          "enum": ["open_claimed", "closed_claimed", "under_review", "unknown"]
+        },
+        "prize_currency": {
+          "const": "USD"
+        },
+        "prize_usd_each": {
+          "type": "integer",
+          "exclusiveMinimum": 0
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["path", "locator", "text_pattern"],
+          "properties": {
+            "path": {
+              "type": "string",
+              "pattern": "^problem-library/raw/candidates/"
+            },
+            "locator": {
+              "type": "string",
+              "format": "uri"
+            },
+            "text_pattern": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        }
+      }
+    }
+  }
+}

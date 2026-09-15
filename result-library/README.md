@@ -17,6 +17,7 @@ Job 成功、Step 验收或 Task 执行完成都不能直接晋升 Result；Task
 result-library/
 ├── AGENTS.md
 ├── README.md
+├── cases/                # 结案卷宗系统（复盘叙事层：时间线+证据链，见 cases/AGENTS.md）
 ├── schema/
 │   └── result.schema.json
 ├── records/
@@ -24,6 +25,8 @@ result-library/
 └── indexes/
     └── solutions.json
 ```
+
+`cases/` 保存从开放到闭合的完整过程档案：正式结案卷宗只能从准入 Result 派生；未准入的候选过程档案进 `dossiers/historical/` 并显式标记 `candidate_only`。注册表 `cases/catalog.json` 只增，由 `python3 result-library/cases/tools/validate_catalog.py` 校验。
 
 ## 派生规则
 

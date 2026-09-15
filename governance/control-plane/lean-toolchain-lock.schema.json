@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/lean-toolchain-lock.schema.json",
+  "title": "VibeMathing Lean and Mathlib Toolchain Lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "as_of",
+    "lean",
+    "mathlib",
+    "fixture",
+    "native_rechecker",
+    "qualification",
+    "invalidation"
+  ],
+  "properties": {
+    "schema_version": {"const": "lean-toolchain-lock.v1"},
+    "as_of": {"type": "string", "format": "date"},
+    "lean": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["toolchain", "release", "commit", "version_fragment", "release_url"],
+      "properties": {
+        "toolchain": {"type": "string", "pattern": "^leanprover/lean4:v[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "release": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "version_fragment": {"type": "string", "minLength": 1},
+        "release_url": {"type": "string", "format": "uri"}
+      }
+    },
+    "mathlib": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tag", "commit", "repository_url"],
+      "properties": {
+        "tag": {"type": "string", "pattern": "^v[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "repository_url": {"type": "string", "format": "uri"}
+      }
+    },
+    "fixture": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "root",
+        "toolchain_file",
+        "lakefile",
+        "manifest",
+        "declaration",
+        "axiom_audit",
+        "trusted_challenge_file",
+        "trusted_challenge_module",
+        "trusted_statement_constant",
+        "trusted_challenge_sha256",
+        "statement_identity_probe"
+      ],
+      "properties": {
+        "root": {"type": "string", "minLength": 1},
+        "toolchain_file": {"type": "string", "minLength": 1},
+        "lakefile": {"type": "string", "minLength": 1},
+        "manifest": {"type": "string", "minLength": 1},
+        "declaration": {"type": "string", "minLength": 1},
+        "axiom_audit": {"type": "string", "minLength": 1},
+        "trusted_challenge_file": {"type": "string", "minLength": 1},
+        "trusted_challenge_module": {"type": "string", "pattern": "^[A-Za-z][A-Za-z0-9_.]*$"},
+        "trusted_statement_constant": {"type": "string", "pattern": "^[A-Za-z_][A-Za-z0-9_'.]*$"},
+        "trusted_challenge_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "statement_identity_probe": {"type": "string", "minLength": 1}
+      }
+    },
+    "native_rechecker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "reference_manual_name", "fresh_flag", "trust_domain"],
+      "properties": {
+        "command": {"enum": ["leanchecker", "lean4checker"]},
+        "reference_manual_name": {"const": "lean4checker"},
+        "fresh_flag": {"const": "--fresh"},
+        "trust_domain": {"const": "lean-kernel"}
+      }
+    },
+    "qualification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["native_kernel_route", "adversarial_high_assurance_route", "evidence_ceiling"],
+      "properties": {
+        "native_kernel_route": {"enum": ["qualification_pending", "qualified", "quarantined"]},
+        "adversarial_high_assurance_route": {"enum": ["blocked", "qualified", "quarantined"]},
+        "evidence_ceiling": {"enum": ["candidate_only", "supported", "terminal_result"]}
+      }
+    },
+    "invalidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["supersedes", "trigger", "required_actions"],
+      "properties": {
+        "supersedes": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "trigger": {"type": "string", "minLength": 1},
+        "required_actions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    }
+  }
+}

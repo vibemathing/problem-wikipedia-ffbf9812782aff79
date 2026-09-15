@@ -16,6 +16,12 @@ from .evidence import (
     sha256_file,
     verify_obligation_evidence_receipt,
 )
+from .evidence_chain import (
+    EvidenceAdmissionError,
+    EvidenceChainError,
+    replay_lineage,
+    strict_artifact_path,
+)
 
 
 GRAPH_RECORDS = Path("research/records/obligation-graphs.jsonl")
@@ -106,26 +112,11 @@ def _index_unique(records: Iterable[dict[str, Any]], key: str, label: str) -> di
 
 
 def _trusted_artifact(project_root: Path, locator: str) -> Path:
-    if not isinstance(locator, str) or not locator:
-        raise ObligationError("artifact locator 为空")
-    pure = PurePosixPath(locator)
-    if pure.is_absolute() or ".." in pure.parts or "\\" in locator:
-        raise ObligationError(f"artifact locator 非法：{locator}")
-    if pure.parts[:2] != ("research", "artifacts"):
-        raise ObligationError(f"artifact 必须位于 research/artifacts：{locator}")
-    path = project_root.joinpath(*pure.parts)
-    root = project_root.resolve()
+    """Use the same all-components symlink policy as Evidence admission."""
     try:
-        resolved = path.resolve(strict=True)
-    except OSError as exc:
-        raise ObligationError(f"artifact 不存在：{locator}") from exc
-    if path.is_symlink() or not path.is_file():
-        raise ObligationError(f"artifact 必须是 regular file：{locator}")
-    try:
-        resolved.relative_to(root)
-    except ValueError as exc:
-        raise ObligationError(f"artifact 逃逸 project root：{locator}") from exc
-    return path
+        return strict_artifact_path(project_root, locator)
+    except (EvidenceAdmissionError, OSError) as exc:
+        raise ObligationError(f"artifact 不可信：{locator}") from exc
 
 
 def _problem_contracts(project_root: Path) -> dict[str, dict[str, Any]]:
@@ -187,6 +178,10 @@ def load_obligation_state(project_root: Path) -> dict[str, Any]:
     graphs = _read_jsonl(project_root / GRAPH_RECORDS)
     candidates = _read_jsonl(project_root / CANDIDATE_RECORDS)
     links = _read_jsonl(project_root / EVIDENCE_LINK_RECORDS)
+    try:
+        lineage = replay_lineage(project_root=project_root)
+    except EvidenceChainError as exc:
+        raise ObligationError(f"Candidate lineage 无法重放：{exc}") from exc
     if not graphs and not candidates and not links:
         return {
             "graphs": {},
@@ -195,6 +190,7 @@ def load_obligation_state(project_root: Path) -> dict[str, Any]:
             "candidates": {},
             "links": [],
             "link_receipts": {},
+            "lineage": lineage,
         }
     problems = _problem_contracts(project_root)
     attempts = _attempts(project_root)
@@ -248,7 +244,10 @@ def load_obligation_state(project_root: Path) -> dict[str, Any]:
             raise ObligationError(f"Attempt 未绑定 current ObligationGraph：{attempt_id}")
 
     candidate_index: dict[str, dict[str, Any]] = {}
-    registry = load_verifier_registry(project_root)
+    # Validate immutable Candidate structure, graph identity, contract
+    # inheritance, and artifact bytes before consulting any verifier registry.
+    # A missing/forged ProblemContract binding must never be hidden by a
+    # historical generator entry or receipt path.
     for candidate in candidates:
         _validate_schema(project_root, "candidate-artifact.schema.json", candidate, "Candidate")
         candidate_id = candidate["candidate_id"]
@@ -262,18 +261,27 @@ def load_obligation_state(project_root: Path) -> dict[str, Any]:
             for field in ("problem_id", "attempt_id", "graph_id")
         ):
             raise ObligationError(f"Candidate 与 graph 身份不一致：{candidate_id}")
+        if candidate.get("problem_contract_sha256") != graph["problem_contract_sha256"]:
+            raise ObligationError(
+                f"Candidate ProblemContract digest 不一致：{candidate_id}"
+            )
         obligation = obligations_by_graph[graph["graph_id"]].get(candidate["obligation_id"])
         if obligation is None:
             raise ObligationError(f"Candidate 引用未知 obligation：{candidate_id}")
         if candidate["kind"] not in obligation["acceptance"]["allowed_candidate_kinds"]:
             raise ObligationError(f"Candidate kind 未被 obligation 允许：{candidate_id}")
-        generator = registry.get(candidate["generator"])
-        if generator is None or generator.get("role") != "generator":
-            raise ObligationError(f"Candidate generator 未注册：{candidate['generator']}")
         artifact = _trusted_artifact(project_root, candidate["artifact"]["locator"])
         if sha256_file(artifact) != candidate["artifact"]["sha256"]:
             raise ObligationError(f"Candidate artifact digest 不匹配：{candidate_id}")
         candidate_index[candidate_id] = candidate
+
+    # Registry lookup is intentionally after all Problem/Attempt/Graph and
+    # Candidate contract checks above.
+    registry = load_verifier_registry(project_root)
+    for candidate in candidate_index.values():
+        generator = registry.get(candidate["generator"])
+        if generator is None or generator.get("role") != "generator":
+            raise ObligationError(f"Candidate generator 未注册：{candidate['generator']}")
 
     link_index: dict[str, dict[str, Any]] = {}
     link_receipts: dict[str, dict[str, Any]] = {}
@@ -312,6 +320,14 @@ def load_obligation_state(project_root: Path) -> dict[str, Any]:
         link_index[link_id] = link
         link_receipts[link_id] = info
 
+    # Both loaders must describe the same immutable collections.  Otherwise a
+    # lineage projection could be computed over one snapshot while closure
+    # consumes another.
+    if set(lineage["candidate_states"]) != set(candidate_index):
+        raise ObligationError("Candidate lineage 与 Candidate ledger 快照不一致")
+    if set(lineage["evidence_link_states"]) != set(link_index):
+        raise ObligationError("Candidate lineage 与 EvidenceLink ledger 快照不一致")
+
     return {
         "graphs": graph_index,
         "current_graph_by_attempt": current_graph_by_attempt,
@@ -319,6 +335,7 @@ def load_obligation_state(project_root: Path) -> dict[str, Any]:
         "candidates": candidate_index,
         "links": links,
         "link_receipts": link_receipts,
+        "lineage": lineage,
     }
 
 
@@ -330,6 +347,12 @@ def derive_obligation_closure(
 ) -> dict[str, Any]:
     """Derive AND-DAG closure only from current immutable objects and valid receipts."""
     state = state or load_obligation_state(project_root)
+    if "lineage" not in state:
+        try:
+            state = dict(state)
+            state["lineage"] = replay_lineage(project_root=project_root)
+        except EvidenceChainError as exc:
+            raise ObligationError(f"Candidate lineage 无法重放：{exc}") from exc
     graph = state["graphs"].get(graph_id)
     if graph is None:
         raise ObligationError(f"未知 ObligationGraph：{graph_id}")
@@ -341,6 +364,11 @@ def derive_obligation_closure(
         for key, value in state["candidates"].items()
         if value["graph_id"] == graph_id
     }
+    for candidate_id, candidate in candidates.items():
+        if candidate.get("problem_contract_sha256") != graph.get("problem_contract_sha256"):
+            raise ObligationError(
+                f"Candidate ProblemContract digest 不一致：{candidate_id}"
+            )
     invalidated: set[str] = set()
     for link in state["links"]:
         if link["graph_id"] != graph_id:
@@ -349,9 +377,48 @@ def derive_obligation_closure(
         if info["verdict"] == "reject" and info["independent"]:
             invalidated.update(link["invalidates"])
 
+    lineage = state.get("lineage") or {}
+    candidate_lineage_states = lineage.get("candidate_states", {})
+    link_lineage_states = lineage.get("evidence_link_states", {})
+    # A Candidate/EvidenceLink is usable only while the replayed append-only
+    # lineage projection says current.  This is deliberately independent of
+    # cryptographic receipt validity: an old receipt remains valid bytes but
+    # loses admission authority after supersession/retraction/invalidation.
     accepted_by_candidate: dict[str, dict[str, list[str]]] = {}
-    stale_candidates: set[str] = set()
-    stale_links: set[str] = set()
+    stale_candidates: set[str] = {
+        candidate_id
+        for candidate_id in candidates
+        if candidate_lineage_states.get(candidate_id, {}).get("status", "unknown")
+        != "current"
+    }
+    retracted_candidates: set[str] = {
+        candidate_id
+        for candidate_id in stale_candidates
+        if candidate_lineage_states.get(candidate_id, {}).get("status") == "retracted"
+    }
+    invalidated_candidates: set[str] = {
+        candidate_id
+        for candidate_id in stale_candidates
+        if candidate_lineage_states.get(candidate_id, {}).get("status") == "invalidated"
+    }
+    stale_links: set[str] = {
+        link_id
+        for link_id, link in ((item["evidence_link_id"], item) for item in state["links"])
+        if link["graph_id"] == graph_id
+        and link_lineage_states.get(link_id, {}).get("status", "unknown") != "current"
+    }
+    retracted_links: set[str] = {
+        link_id
+        for link_id in stale_links
+        if link_lineage_states.get(link_id, {}).get("status") == "retracted"
+    }
+    lineage_invalidated_links: set[str] = {
+        link_id
+        for link_id in stale_links
+        if link_lineage_states.get(link_id, {}).get("status") == "invalidated"
+    }
+    # Statement revision is an independent freshness check and remains stale
+    # even if no lineage event was emitted.
     for candidate_id, candidate in candidates.items():
         obligation = obligations[candidate["obligation_id"]]
         if candidate["statement_sha256"] != obligation["statement_sha256"]:
@@ -362,7 +429,7 @@ def derive_obligation_closure(
             continue
         candidate_id = link["candidate_id"]
         info = state["link_receipts"][link_id]
-        if candidate_id in stale_candidates or link_id in invalidated:
+        if candidate_id in stale_candidates or link_id in invalidated or link_id in stale_links:
             stale_links.add(link_id)
             continue
         if info["verdict"] != "accept" or not info["independent"]:
@@ -370,6 +437,7 @@ def derive_obligation_closure(
         accepted_by_candidate.setdefault(candidate_id, {}).setdefault(
             info["capability"], []
         ).append(link_id)
+    invalidated.update(lineage_invalidated_links)
 
     node_states: dict[str, dict[str, Any]] = {}
 
@@ -460,7 +528,10 @@ def derive_obligation_closure(
             key for key, value in node_states.items() if value["status"] == "conflict"
         ),
         "stale_candidate_ids": sorted(stale_candidates),
+        "retracted_candidate_ids": sorted(retracted_candidates),
+        "invalidated_candidate_ids": sorted(invalidated_candidates),
         "stale_evidence_link_ids": sorted(stale_links),
+        "retracted_evidence_link_ids": sorted(retracted_links),
         "invalidated_evidence_link_ids": sorted(invalidated),
     }
 
@@ -491,7 +562,12 @@ def obligation_result_gate(
             )
         ):
             raise ObligationError("legacy Attempt 不得引用 ObligationGraph Result 字段")
-        return {"required": False, "capabilities": set(), "closure": None}
+        return {
+            "required": False,
+            "capabilities": set(),
+            "capability_domains": {},
+            "closure": None,
+        }
     state = load_obligation_state(project_root)
     graph = state["graphs"].get(graph_id)
     if graph is None:
@@ -531,10 +607,23 @@ def obligation_result_gate(
         allowed_links.update(root_node["accepted_evidence_links"].get(candidate_id, []))
     if not set(selected_ids).issubset(allowed_links):
         raise ObligationError("Result 引用了 stale、invalidated、非独立或非 root EvidenceLink")
-    capabilities = {
-        state["link_receipts"][link_id]["capability"] for link_id in selected_ids
+    registry = load_verifier_registry(project_root)
+    capabilities: set[str] = set()
+    capability_domains: dict[str, set[str]] = {}
+    for link_id in selected_ids:
+        receipt = state["link_receipts"][link_id]
+        capability = receipt["capability"]
+        verifier = registry.get(receipt.get("verifier"))
+        if verifier is None:
+            raise ObligationError(f"root EvidenceLink verifier 未注册：{receipt.get('verifier')}")
+        capabilities.add(capability)
+        capability_domains.setdefault(capability, set()).add(verifier["trust_domain"])
+    return {
+        "required": True,
+        "capabilities": capabilities,
+        "capability_domains": capability_domains,
+        "closure": closure,
     }
-    return {"required": True, "capabilities": capabilities, "closure": closure}
 
 
 def write_closure_snapshot(project_root: Path, graph_id: str) -> dict[str, str]:

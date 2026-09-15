@@ -19,37 +19,37 @@ This file is generated from repository truth and bounded for the web channel. It
   "active_skills": [
     {
       "entry": ".codex/skills/math-computation/SKILL.md",
-      "entry_sha256": "80c447221725ec198bee4b104d43ca28425110a7dac17afa9cad56ec69b57f48",
+      "entry_sha256": "7a4127ce27adc9929a3734774a41d7a91c283ca1d1d779ab894e56cac94efbe4",
       "skill_id": "math-computation",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "web_status": "constrained"
     },
     {
       "entry": ".codex/skills/math-derivation/SKILL.md",
-      "entry_sha256": "3f3b567729f1e5dd24f87e832fdac702577f4add14b8cf6be12d538e1fe787c1",
+      "entry_sha256": "0373b44afd941250fbb09fb305ca29dfa2cf40b1398cfbbd3bcbd4587316c302",
       "skill_id": "math-derivation",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "web_status": "active"
     },
     {
       "entry": ".codex/skills/math-discovery/SKILL.md",
-      "entry_sha256": "ceb54d773cd970ca42d0243fb1a39b109cab3ffdbe2dd87b98b43539f988d471",
+      "entry_sha256": "b2ab9fc56b0b227bc42e62346ea112d5fd3ae17c3d4822779c3ccb53e580354e",
       "skill_id": "math-discovery",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "web_status": "active"
     },
     {
       "entry": ".codex/skills/math-formalization/SKILL.md",
-      "entry_sha256": "8ade921dacd277f425f424064a6002806c057f160555081dbdb4ec05c1f5ea05",
+      "entry_sha256": "d206425b677e72e4037da7da02bdb3ce00064c6c10f6c60b0cf3527440b626be",
       "skill_id": "math-formalization",
-      "version": "0.5.0",
+      "version": "0.8.0",
       "web_status": "constrained"
     },
     {
       "entry": ".codex/skills/math-proof/SKILL.md",
-      "entry_sha256": "61006c732ad69e73f56be126acb6fa9e25c866e18733ce1f0f3863c1f8eea80f",
+      "entry_sha256": "0955a202eb5631b44501c57624f62fa93a5e24e863d245f3e5122b2d3a45727a",
       "skill_id": "math-proof",
-      "version": "0.5.0",
+      "version": "0.8.0",
       "web_status": "active"
     },
     {
@@ -75,9 +75,9 @@ This file is generated from repository truth and bounded for the web channel. It
     },
     {
       "entry": ".codex/skills/vibe-mathing-router/SKILL.md",
-      "entry_sha256": "4eeaf34d99f7fd5b357a9ea7b255df45bcbc26d052f2e31e015741ac40c0778c",
+      "entry_sha256": "d343497990616b438defb572e233a1585b1ef17d0e3a512e0740f14e4e03ce97",
       "skill_id": "vibe-mathing-router",
-      "version": "0.5.0",
+      "version": "0.7.0",
       "web_status": "active"
     }
   ],
@@ -147,13 +147,6 @@ This file is generated from repository truth and bounded for the web channel. It
   ],
   "knowledge_sources": [
     {
-      "evidence_ceiling": "verifier_input",
-      "maturity": "installed",
-      "operational_status": "quarantined",
-      "source_class": "formal_library_index",
-      "source_id": "lean-mathlib-local"
-    },
-    {
       "evidence_ceiling": "candidate_only",
       "maturity": "surveyed",
       "operational_status": "design_only",
@@ -161,25 +154,11 @@ This file is generated from repository truth and bounded for the web channel. It
       "source_id": "lean-reservoir"
     },
     {
-      "evidence_ceiling": "candidate_only",
-      "maturity": "surveyed",
-      "operational_status": "design_only",
-      "source_class": "formal_library_index",
-      "source_id": "mathlib-docs-search"
-    },
-    {
       "evidence_ceiling": "verifier_input",
       "maturity": "surveyed",
       "operational_status": "design_only",
       "source_class": "proof_archive",
       "source_id": "isabelle-afp"
-    },
-    {
-      "evidence_ceiling": "verifier_input",
-      "maturity": "surveyed",
-      "operational_status": "design_only",
-      "source_class": "formal_package_registry",
-      "source_id": "rocq-mathcomp"
     },
     {
       "evidence_ceiling": "candidate_only",
@@ -192,8 +171,8 @@ This file is generated from repository truth and bounded for the web channel. It
       "evidence_ceiling": "candidate_only",
       "maturity": "surveyed",
       "operational_status": "design_only",
-      "source_class": "mathematical_object_database",
-      "source_id": "lmfdb"
+      "source_class": "formal_library_index",
+      "source_id": "mathlib-docs-search"
     },
     {
       "evidence_ceiling": "candidate_only",
@@ -208,6 +187,27 @@ This file is generated from repository truth and bounded for the web channel. It
       "operational_status": "design_only",
       "source_class": "algorithm_distribution",
       "source_id": "sagemath"
+    },
+    {
+      "evidence_ceiling": "candidate_only",
+      "maturity": "surveyed",
+      "operational_status": "design_only",
+      "source_class": "mathematical_object_database",
+      "source_id": "lmfdb"
+    },
+    {
+      "evidence_ceiling": "verifier_input",
+      "maturity": "installed",
+      "operational_status": "available",
+      "source_class": "formal_library_index",
+      "source_id": "lean-mathlib-local"
+    },
+    {
+      "evidence_ceiling": "verifier_input",
+      "maturity": "surveyed",
+      "operational_status": "design_only",
+      "source_class": "formal_package_registry",
+      "source_id": "rocq-mathcomp"
     }
   ],
   "obligation_graphs": [],
@@ -215,72 +215,73 @@ This file is generated from repository truth and bounded for the web channel. It
     "acceptance": {
       "policy": "solution-admission-v1"
     },
-    "aliases": [],
+    "aliases": [
+      "wikipedia:wikipedia-ffbf9812782aff79"
+    ],
     "allowed_axioms": [
-      "none"
+      "source-explicit-definitions-only"
     ],
     "assumptions": [
-      "This record must never be treated as an active research problem."
+      "DRAFT ONLY: no mathematical assumptions beyond the source text are admitted.",
+      "A separate statement-fidelity and current-status review is required before canonical admission."
     ],
     "constraints": {
       "allowed_adapters": [
-        "template-validation-v1"
+        "source-fidelity-review-v1"
       ],
       "allowed_methods": [
         "discovery"
       ],
       "max_attempts": 1,
       "runtime": {
-        "max_output_bytes": 65536,
+        "max_output_bytes": 262144,
         "max_retries": 1,
-        "max_transitions": 10,
-        "timeout_seconds": 60
+        "max_transitions": 20,
+        "timeout_seconds": 300
       }
     },
-    "created_at": "2026-09-06T00:00:00Z",
+    "created_at": "2026-09-15T21:28:00.195364Z",
     "definitions": [
       {
-        "definition": "A non-admitted draft record used only to validate the physical public repository template.",
-        "term": "template placeholder"
+        "definition": "Draft only. Use the exact source record and do not infer, strengthen, or repair definitions, quantifiers, assumptions, or status.",
+        "term": "source-native interpretation"
       }
     ],
     "domain": {
-      "description": "Template-only placeholder domain; not a mathematical research question.",
+      "description": "Draft source observation in Geometry, Euclidean geometry; domain extraction is unresolved.",
       "objects": [
-        "template-placeholder"
+        "UNRESOLVED: extract mathematical objects from the exact source statement during review"
       ]
     },
     "lifecycle": "draft",
     "msc": [
-      "00A00"
+      "51-01"
     ],
-    "problem_id": "problem:template-placeholder",
+    "problem_id": "problem:wikipedia-ffbf9812782aff79",
     "quantifiers": [
       {
-        "domain": "a reviewed public canonical ProblemContract supplied by the repository builder",
-        "kind": "find",
-        "variables": [
-          "replacement_problem"
-        ]
+        "domain": "UNRESOLVED: source quantifier scope must be extracted and reviewed before canonical admission.",
+        "kind": "decide",
+        "variables": []
       }
     ],
     "schema_version": "1.0.0",
     "sources": [
       {
-        "retrieved_at": "2026-09-06T00:00:00Z",
-        "source": "Vibe Mathing public Web Harness",
-        "source_record_id": "public-template-placeholder-v1",
-        "url": "https://github.com/vibemathing/vibe-mathing-problem-public-template"
+        "retrieved_at": "2026-09-02T00:06:33Z",
+        "source": "Wikipedia source observation",
+        "source_record_id": "wikipedia-ffbf9812782aff79",
+        "url": "https://en.wikipedia.org/wiki/Borromean_rings"
       }
     ],
     "statement": {
       "language": "en",
-      "text": "This is a non-research placeholder. Replace it with exactly one reviewed public ProblemContract before creating a public problem repository.",
+      "text": "Borromean rings — are there three unknotted space curves, not all three circles, which cannot be arranged to form this link?",
       "version": 1
     },
-    "title": "Vibe Mathing public problem repository template placeholder",
-    "updated_at": "2026-09-06T00:00:00Z"
+    "title": "Borromean rings",
+    "updated_at": "2026-09-15T21:28:00.195364Z"
   },
-  "problem_contract_sha256": "e64cd03254e03dd661eade23243c3c21793fc2d8bffa2d33c172cf8ed2e7f940"
+  "problem_contract_sha256": "229da16e36e7adf956cdc1e223503bc944528aa291683cea241f11c6f2704fd3"
 }
 ```

@@ -1,0 +1,1116 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/external-verdict-receipt.v1.json",
+  "title": "Vibe Mathing ExternalVerdictReceipt v1",
+  "description": "Strict append-only, candidate-only observation of a read-only Prove2me response. It is not a kernel-verification receipt and cannot be promoted by itself.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "contract_status",
+    "record_type",
+    "receipt_id",
+    "created_at",
+    "observation_status",
+    "claim_ceiling",
+    "admission_status",
+    "identity",
+    "digests",
+    "platform",
+    "target",
+    "submission",
+    "source",
+    "environment",
+    "responses",
+    "principals",
+    "transport",
+    "normalization",
+    "replay_boundary",
+    "failure",
+    "provenance"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "contract_status": {
+      "const": "draft"
+    },
+    "record_type": {
+      "const": "ExternalVerdictReceipt"
+    },
+    "receipt_id": {
+      "type": "string",
+      "pattern": "^evr:[A-Za-z0-9][A-Za-z0-9._:-]{7,200}$"
+    },
+    "created_at": {
+      "$ref": "#/$defs/date_time"
+    },
+    "observation_status": {
+      "type": "string",
+      "enum": [
+        "observed",
+        "blocked",
+        "quarantined"
+      ]
+    },
+    "claim_ceiling": {
+      "const": "candidate_only"
+    },
+    "admission_status": {
+      "const": "unadmitted"
+    },
+    "identity": {
+      "$ref": "#/$defs/identity"
+    },
+    "digests": {
+      "$ref": "#/$defs/digests"
+    },
+    "platform": {
+      "$ref": "#/$defs/platform"
+    },
+    "target": {
+      "$ref": "#/$defs/target"
+    },
+    "submission": {
+      "$ref": "#/$defs/submission"
+    },
+    "source": {
+      "$ref": "#/$defs/source"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "responses": {
+      "$ref": "#/$defs/responses"
+    },
+    "principals": {
+      "$ref": "#/$defs/principals"
+    },
+    "transport": {
+      "$ref": "#/$defs/transport"
+    },
+    "normalization": {
+      "$ref": "#/$defs/normalization"
+    },
+    "replay_boundary": {
+      "$ref": "#/$defs/replay_boundary"
+    },
+    "failure": {
+      "$ref": "#/$defs/failure"
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    }
+  },
+  "$defs": {
+    "digest": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "nullable_digest": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/digest"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "safe_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:/-]*$"
+    },
+    "safe_text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 512,
+      "pattern": "^[^\\u0000-\\u001f\\u007f]+$"
+    },
+    "date_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "api_endpoint": {
+      "type": "string",
+      "maxLength": 1024,
+      "pattern": "^https://prove2\\.me/api/v1(?:/[A-Za-z0-9._~:/-]+)?$"
+    },
+    "relative_locator": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1024,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$))(?!.*\\\\)(?!.*[\\u0000-\\u001f\\u007f])[^\\s]+$"
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "problem_id",
+        "problem_contract_sha256",
+        "attempt_id",
+        "graph_id",
+        "obligation_id",
+        "candidate_id",
+        "statement_sha256",
+        "route_id"
+      ],
+      "properties": {
+        "problem_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "problem_contract_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "attempt_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "graph_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "obligation_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "candidate_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "statement_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "route_id": {
+          "$ref": "#/$defs/safe_id"
+        }
+      }
+    },
+    "digests": {
+      "type": "object",
+      "additionalProperties": false,
+      "description": "All digest equalities are application invariants in addition to this shape validation.",
+      "required": [
+        "problem_contract_sha256",
+        "attempt_sha256",
+        "graph_sha256",
+        "obligation_sha256",
+        "candidate_sha256",
+        "statement_sha256",
+        "source_sha256",
+        "environment_remote_sha256",
+        "environment_local_sha256",
+        "target_response_sha256",
+        "submission_response_sha256",
+        "source_response_sha256",
+        "environment_response_sha256",
+        "normalization_input_sha256",
+        "idempotency_key_sha256"
+      ],
+      "properties": {
+        "problem_contract_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "attempt_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "graph_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "obligation_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "candidate_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "statement_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        },
+        "environment_remote_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        },
+        "environment_local_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "target_response_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "submission_response_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_response_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "environment_response_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "normalization_input_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "idempotency_key_sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "platform": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "api_base",
+        "server_version",
+        "client_version",
+        "version_status",
+        "version_observation_ref"
+      ],
+      "properties": {
+        "provider": {
+          "const": "prove2me"
+        },
+        "api_base": {
+          "const": "https://prove2.me/api/v1"
+        },
+        "server_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+        },
+        "client_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+        },
+        "version_status": {
+          "type": "string",
+          "enum": [
+            "locked",
+            "drift",
+            "unknown"
+          ]
+        },
+        "version_observation_ref": {
+          "const": "responses.environment"
+        }
+      }
+    },
+    "statement_binding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local_statement_sha256",
+        "remote_statement_sha256",
+        "retrieval_status",
+        "comparison"
+      ],
+      "properties": {
+        "local_statement_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "remote_statement_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        },
+        "retrieval_status": {
+          "type": "string",
+          "enum": [
+            "present",
+            "unavailable"
+          ]
+        },
+        "comparison": {
+          "type": "string",
+          "enum": [
+            "not_checked",
+            "match",
+            "mismatch",
+            "needs_review"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "retrieval_status": {
+                "const": "present"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "remote_statement_sha256": {
+                "$ref": "#/$defs/digest"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "retrieval_status": {
+                "const": "unavailable"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "remote_statement_sha256": {
+                "type": "null"
+              },
+              "comparison": {
+                "enum": [
+                  "not_checked",
+                  "needs_review"
+                ]
+              }
+            }
+          }
+        }
+      ]
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target_kind",
+        "target_id",
+        "target_name",
+        "statement",
+        "response_ref"
+      ],
+      "properties": {
+        "target_kind": {
+          "type": "string",
+          "enum": [
+            "theorem",
+            "definition"
+          ]
+        },
+        "target_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "target_name": {
+          "$ref": "#/$defs/safe_text"
+        },
+        "statement": {
+          "$ref": "#/$defs/statement_binding"
+        },
+        "response_ref": {
+          "const": "responses.target"
+        }
+      }
+    },
+    "submission": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "submission_id",
+        "external_status",
+        "proof_kind",
+        "status_scope",
+        "status_observed_at",
+        "response_ref"
+      ],
+      "properties": {
+        "submission_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "external_status": {
+          "type": "string",
+          "enum": [
+            "PENDING",
+            "ACCEPTED",
+            "SKETCH_ACCEPTED",
+            "CE",
+            "WA",
+            "SORRY",
+            "FAILED",
+            "ERROR",
+            "NOT_FOUND",
+            "UNAUTHORIZED",
+            "UNKNOWN"
+          ]
+        },
+        "proof_kind": {
+          "type": "string",
+          "enum": [
+            "proof",
+            "counterexample",
+            "sketch",
+            "definition",
+            "unknown"
+          ]
+        },
+        "status_scope": {
+          "const": "remote_only"
+        },
+        "status_observed_at": {
+          "$ref": "#/$defs/date_time"
+        },
+        "server_message_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        },
+        "response_ref": {
+          "const": "responses.submission"
+        }
+      }
+    },
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "locator",
+        "sha256",
+        "media_type",
+        "raw_content_in_receipt"
+      ],
+      "properties": {
+        "artifact_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "locator": {
+          "$ref": "#/$defs/relative_locator"
+        },
+        "sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "media_type": {
+          "type": "string",
+          "enum": [
+            "text/plain",
+            "text/x-lean",
+            "application/json",
+            "application/octet-stream"
+          ]
+        },
+        "raw_content_in_receipt": {
+          "const": false
+        }
+      }
+    },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_kind",
+        "remote_path",
+        "retrieval_status",
+        "content_sha256",
+        "artifact",
+        "response_ref"
+      ],
+      "properties": {
+        "source_kind": {
+          "type": "string",
+          "enum": [
+            "submitted_solution",
+            "theorem_declaration",
+            "definition_declaration",
+            "package_manifest",
+            "unknown"
+          ]
+        },
+        "remote_path": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "pattern": "^/[A-Za-z0-9._~:/-]+$"
+        },
+        "retrieval_status": {
+          "type": "string",
+          "enum": [
+            "retrieved",
+            "unavailable"
+          ]
+        },
+        "content_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        },
+        "artifact": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/artifact_ref"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "response_ref": {
+          "const": "responses.source"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "retrieval_status": {
+                "const": "retrieved"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "content_sha256": {
+                "$ref": "#/$defs/digest"
+              },
+              "artifact": {
+                "$ref": "#/$defs/artifact_ref"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "retrieval_status": {
+                "const": "unavailable"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "content_sha256": {
+                "type": "null"
+              },
+              "artifact": {
+                "type": "null"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "environment_snapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "provider",
+        "environment_id",
+        "toolchain",
+        "mathlib_revision",
+        "manifest_sha256"
+      ],
+      "properties": {
+        "provider": {
+          "type": "string",
+          "enum": [
+            "prove2me",
+            "local-workspace"
+          ]
+        },
+        "environment_id": {
+          "$ref": "#/$defs/safe_id"
+        },
+        "toolchain": {
+          "$ref": "#/$defs/safe_text"
+        },
+        "mathlib_revision": {
+          "$ref": "#/$defs/safe_text"
+        },
+        "manifest_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "remote",
+        "local_expected",
+        "comparison",
+        "response_ref"
+      ],
+      "properties": {
+        "remote": {
+          "$ref": "#/$defs/environment_snapshot"
+        },
+        "local_expected": {
+          "$ref": "#/$defs/environment_snapshot"
+        },
+        "comparison": {
+          "type": "string",
+          "enum": [
+            "match",
+            "mismatch",
+            "unknown"
+          ]
+        },
+        "response_ref": {
+          "const": "responses.environment"
+        }
+      }
+    },
+    "response": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "request_method",
+        "endpoint",
+        "request_sha256",
+        "response_sha256",
+        "response_kind",
+        "http_status",
+        "body_sha256",
+        "body_persisted",
+        "retrieved_at",
+        "media_type",
+        "redirects"
+      ],
+      "properties": {
+        "request_method": {
+          "const": "GET"
+        },
+        "endpoint": {
+          "$ref": "#/$defs/api_endpoint"
+        },
+        "request_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "response_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "response_kind": {
+          "type": "string",
+          "enum": [
+            "success",
+            "http_error",
+            "transport_error",
+            "malformed"
+          ]
+        },
+        "http_status": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 599
+        },
+        "body_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        },
+        "body_persisted": {
+          "const": false
+        },
+        "retrieved_at": {
+          "$ref": "#/$defs/date_time"
+        },
+        "media_type": {
+          "type": "string",
+          "enum": [
+            "application/json",
+            "text/plain",
+            "application/octet-stream",
+            "unknown"
+          ]
+        },
+        "error_code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 64,
+          "pattern": "^[A-Z0-9_-]+$"
+        },
+        "redirects": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {
+            "$ref": "#/$defs/api_endpoint"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "response_kind": {
+                "const": "transport_error"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "const": 0
+              },
+              "body_sha256": {
+                "type": "null"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "response_kind": {
+                "enum": [
+                  "success",
+                  "http_error",
+                  "malformed"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "http_status": {
+                "minimum": 100
+              }
+            }
+          }
+        }
+      ]
+    },
+    "responses": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "target",
+        "submission",
+        "source",
+        "environment"
+      ],
+      "properties": {
+        "target": {
+          "$ref": "#/$defs/response"
+        },
+        "submission": {
+          "$ref": "#/$defs/response"
+        },
+        "source": {
+          "$ref": "#/$defs/response"
+        },
+        "environment": {
+          "$ref": "#/$defs/response"
+        }
+      }
+    },
+    "issuer_principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "role",
+        "trust_domain",
+        "issued_capability",
+        "kernel_capability"
+      ],
+      "properties": {
+        "principal_id": {
+          "const": "principal:prove2me-server"
+        },
+        "role": {
+          "const": "external_verdict_issuer"
+        },
+        "trust_domain": {
+          "const": "external-platform"
+        },
+        "issued_capability": {
+          "const": "external_verdict_observation"
+        },
+        "kernel_capability": {
+          "const": false
+        }
+      }
+    },
+    "importer_principal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "role",
+        "trust_domain",
+        "allowed_effects",
+        "forbidden_effects"
+      ],
+      "properties": {
+        "principal_id": {
+          "const": "principal:external-verdict-importer"
+        },
+        "role": {
+          "const": "candidate_only_importer"
+        },
+        "trust_domain": {
+          "const": "vibe-mathing-control-plane"
+        },
+        "allowed_effects": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "append_external_verdict_receipt",
+              "append_importer_journal",
+              "append_candidate_only_intake"
+            ]
+          },
+          "maxItems": 3
+        },
+        "forbidden_effects": {
+          "type": "array",
+          "minItems": 12,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "remote_write",
+              "canonical_problem_mutation",
+              "attempt_mutation",
+              "graph_mutation",
+              "obligation_closure",
+              "kernel_verification",
+              "axiom_audit",
+              "statement_faithfulness_decision",
+              "evidence_link_creation",
+              "result_creation",
+              "solution_index_update",
+              "credential_persistence"
+            ]
+          },
+          "maxItems": 12
+        }
+      }
+    },
+    "principals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issuer",
+        "importer"
+      ],
+      "properties": {
+        "issuer": {
+          "$ref": "#/$defs/issuer_principal"
+        },
+        "importer": {
+          "$ref": "#/$defs/importer_principal"
+        }
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "request_policy",
+        "remote_mutation_attempted",
+        "writes_performed",
+        "credential_material_persisted",
+        "raw_response_persisted",
+        "tls_policy",
+        "redirect_policy"
+      ],
+      "properties": {
+        "mode": {
+          "const": "read_only"
+        },
+        "request_policy": {
+          "const": "GET_only"
+        },
+        "remote_mutation_attempted": {
+          "const": false
+        },
+        "writes_performed": {
+          "const": false
+        },
+        "credential_material_persisted": {
+          "const": false
+        },
+        "raw_response_persisted": {
+          "const": false
+        },
+        "tls_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "scheme",
+            "minimum_version",
+            "certificate_validation",
+            "hostname_verification"
+          ],
+          "properties": {
+            "scheme": {
+              "const": "https"
+            },
+            "minimum_version": {
+              "const": "TLSv1.3"
+            },
+            "certificate_validation": {
+              "const": "required"
+            },
+            "hostname_verification": {
+              "const": "required"
+            }
+          }
+        },
+        "redirect_policy": {
+          "const": "reject"
+        }
+      }
+    },
+    "normalization": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonicalization",
+        "encoding",
+        "line_endings",
+        "duplicate_json_keys",
+        "unknown_fields",
+        "redaction_policy",
+        "normalization_input_sha256",
+        "observation_key_sha256",
+        "idempotency_key_sha256"
+      ],
+      "properties": {
+        "canonicalization": {
+          "const": "JCS-RFC8785"
+        },
+        "encoding": {
+          "const": "UTF-8-NFC"
+        },
+        "line_endings": {
+          "const": "LF"
+        },
+        "duplicate_json_keys": {
+          "const": "reject"
+        },
+        "unknown_fields": {
+          "const": "reject"
+        },
+        "redaction_policy": {
+          "const": "omit_credentials_and_raw_response_bodies"
+        },
+        "normalization_input_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "observation_key_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "idempotency_key_sha256": {
+          "$ref": "#/$defs/digest"
+        }
+      }
+    },
+    "replay_boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "local_replay_status",
+        "kernel_receipt_ref",
+        "axiom_audit_ref",
+        "statement_faithfulness_ref",
+        "evidence_link_ref",
+        "result_ref",
+        "promotion"
+      ],
+      "properties": {
+        "local_replay_status": {
+          "const": "not_run"
+        },
+        "kernel_receipt_ref": {
+          "type": "null"
+        },
+        "axiom_audit_ref": {
+          "type": "null"
+        },
+        "statement_faithfulness_ref": {
+          "type": "null"
+        },
+        "evidence_link_ref": {
+          "type": "null"
+        },
+        "result_ref": {
+          "type": "null"
+        },
+        "promotion": {
+          "const": "forbidden_from_this_receipt"
+        }
+      }
+    },
+    "failure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "class",
+        "code",
+        "message_sha256",
+        "raw_message_persisted",
+        "retryable"
+      ],
+      "properties": {
+        "class": {
+          "type": "string",
+          "enum": [
+            "none",
+            "unauthorized",
+            "not_found",
+            "transport_failure",
+            "timeout",
+            "malformed_response",
+            "version_drift",
+            "digest_mismatch",
+            "identity_mismatch",
+            "statement_mismatch",
+            "environment_mismatch",
+            "unsafe_redirect",
+            "credential_leakage",
+            "append_conflict"
+          ]
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "maxLength": 64,
+          "pattern": "^[A-Z0-9_-]+$"
+        },
+        "message_sha256": {
+          "$ref": "#/$defs/nullable_digest"
+        },
+        "raw_message_persisted": {
+          "const": false
+        },
+        "retryable": {
+          "type": "boolean"
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "importer_version",
+        "importer_code_sha256",
+        "schema_sha256",
+        "source_record_kind",
+        "append_only"
+      ],
+      "properties": {
+        "importer_version": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._+-]*$"
+        },
+        "importer_code_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "schema_sha256": {
+          "$ref": "#/$defs/digest"
+        },
+        "source_record_kind": {
+          "const": "read_only_external_observation"
+        },
+        "append_only": {
+          "const": true
+        }
+      }
+    }
+  },
+  "$comment": "Application validation must additionally assert the exact ordered policy set and all identity/digest equalities; JSON Schema cannot compare fields across locations."
+}

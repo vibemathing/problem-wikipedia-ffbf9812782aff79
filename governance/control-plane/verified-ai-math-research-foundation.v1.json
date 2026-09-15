@@ -1,0 +1,80 @@
+{
+  "schema_version": "1.0.0",
+  "policy_id": "verified-ai-math-research-foundation:v1",
+  "status": "active",
+  "marker": "VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1",
+  "normative_standard_path": "governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md",
+  "metamodel_root": "PLFB",
+  "invariants": [
+    {"id": "FND-01", "name": "plfb_single_conceptual_root", "faces": ["F03", "F12"], "enforcement": "governance"},
+    {"id": "FND-02", "name": "identity_and_statement_before_research", "faces": ["F01", "F02", "F03"], "enforcement": "admission_gate"},
+    {"id": "FND-03", "name": "immutable_statement_binding", "faces": ["F03", "F04", "F10", "F11"], "enforcement": "schema"},
+    {"id": "FND-04", "name": "generation_verification_admission_conclusion_separation", "faces": ["F05", "F09", "F10", "F11"], "enforcement": "validator"},
+    {"id": "FND-05", "name": "candidate_quarantine_by_default", "faces": ["F05", "F09", "F10"], "enforcement": "admission_gate"},
+    {"id": "FND-06", "name": "evidence_capabilities_are_non_substitutable", "faces": ["F09", "F10", "F11"], "enforcement": "validator"},
+    {"id": "FND-07", "name": "kernel_and_statement_faithfulness_conjunction", "faces": ["F08", "F09", "F10"], "enforcement": "admission_gate"},
+    {"id": "FND-08", "name": "proof_refutation_symmetry_with_domain_witness", "faces": ["F03", "F08", "F09", "F10"], "enforcement": "admission_gate"},
+    {"id": "FND-09", "name": "independent_replay_and_provenance", "faces": ["F09", "F10"], "enforcement": "validator"},
+    {"id": "FND-10", "name": "bounded_persistent_research", "faces": ["F04", "F05", "F07"], "enforcement": "runtime"},
+    {"id": "FND-11", "name": "conflict_freezes_closure", "faces": ["F04", "F10", "F11"], "enforcement": "admission_gate"},
+    {"id": "FND-12", "name": "knowledge_feedback_never_auto_promotes", "faces": ["F02", "F04", "F12", "F13"], "enforcement": "governance"},
+    {"id": "FND-13", "name": "runtime_and_transport_are_not_math_evidence", "faces": ["F05", "F09", "F10", "F11"], "enforcement": "validator"},
+    {"id": "FND-14", "name": "append_only_evidence_with_retractable_conclusions", "faces": ["F10", "F11", "F12"], "enforcement": "admission_gate"}
+  ],
+  "loop": [
+    {"id": "D01", "name": "discover", "faces": ["F01", "F02"], "input_class": ["source"], "output_class": ["SourceObservation", "CandidateObservation"], "gate": "provenance_and_source_status", "may_auto_promote_result": false},
+    {"id": "D02", "name": "identify", "faces": ["F01", "F03"], "input_class": ["SourceObservation"], "output_class": ["ProblemContract"], "gate": "dedup_statement_faithfulness_admission", "may_auto_promote_result": false},
+    {"id": "D03", "name": "model", "faces": ["F03", "F06", "F08"], "input_class": ["ProblemContract"], "output_class": ["definition", "representation", "invariant"], "gate": "domain_quantifier_assumption_freeze", "may_auto_promote_result": false},
+    {"id": "D04", "name": "plan", "faces": ["F04", "F05"], "input_class": ["ProblemContract", "FailedRoute"], "output_class": ["ObligationGraph", "OutcomeGraph", "Step"], "gate": "root_budget_stop_condition", "may_auto_promote_result": false},
+    {"id": "D05", "name": "explore", "faces": ["F05", "F07", "F09"], "input_class": ["Obligation", "Step"], "output_class": ["CandidateArtifact", "FailedRoute", "Checkpoint"], "gate": "candidate_quarantine_and_scope", "may_auto_promote_result": false},
+    {"id": "D06", "name": "formalize", "faces": ["F08", "F09", "F11"], "input_class": ["CandidateArtifact"], "output_class": ["formal_statement", "proof_object_candidate"], "gate": "identity_and_faithfulness_pending", "may_auto_promote_result": false},
+    {"id": "D07", "name": "prove_refute", "faces": ["F08", "F09"], "input_class": ["Obligation", "formal_statement"], "output_class": ["proof_candidate", "counterexample_candidate"], "gate": "no_self_assessed_closure", "may_auto_promote_result": false},
+    {"id": "D08", "name": "verify", "faces": ["F09", "F10"], "input_class": ["CandidateArtifact"], "output_class": ["EvidenceReceipt"], "gate": "typed_capability_and_replay", "may_auto_promote_result": false},
+    {"id": "D09", "name": "admit", "faces": ["F10", "F11"], "input_class": ["EvidenceReceipt", "SemanticReview"], "output_class": ["EvidenceLink", "Result", "Conflict"], "gate": "independent_coverage_freshness_conflict", "may_auto_promote_result": false},
+    {"id": "D10", "name": "synthesize", "faces": ["F11", "F12"], "input_class": ["Result", "FailedRoute"], "output_class": ["SolutionView", "KnowledgeRelation", "Retrospective"], "gate": "derived_read_only", "may_auto_promote_result": false},
+    {"id": "D11", "name": "feedback", "faces": ["F02", "F04", "F05", "F12", "F13"], "input_class": ["KnowledgeRelation", "OpenObligation"], "output_class": ["candidate_problem", "candidate_route", "tool_requirement"], "gate": "lineage_and_reentry", "may_auto_promote_result": false}
+  ],
+  "promotion_profiles": {
+    "supported": {
+      "outcome": "supported", "kind": "bounded_support",
+      "required_capabilities": ["statement_identity"],
+      "require_independent": false, "require_root_closure": false, "conflict_policy": "freeze"
+    },
+    "established_proof": {
+      "outcome": "established", "kind": "proof",
+      "required_capabilities": ["kernel_check", "axiom_escape_audit", "statement_identity", "statement_faithfulness", "toolchain_freshness", "proof_replay_check"],
+      "require_independent": true, "require_root_closure": true, "conflict_policy": "freeze"
+    },
+    "refuted_counterexample": {
+      "outcome": "refuted", "kind": "counterexample",
+      "required_capabilities": ["counterexample_check", "statement_identity", "statement_faithfulness"],
+      "require_independent": true, "require_root_closure": true, "conflict_policy": "freeze"
+    }
+  },
+  "forbidden_substitutions": [
+    "chat_response_for_proof",
+    "model_self_assessment_for_verification",
+    "process_exit_zero_for_evidence",
+    "ci_success_for_mathematical_closure",
+    "commit_or_merge_for_result_admission",
+    "finite_search_without_counterexample_for_general_proof",
+    "kernel_check_for_statement_faithfulness",
+    "source_status_for_project_result",
+    "candidate_acceptance_for_evidence_link",
+    "session_or_project_completion_for_root_closure",
+    "knowledge_view_for_result_truth_source"
+  ],
+  "required_agent_surfaces": [
+    "AGENTS.md",
+    ".codex/AGENTS.md",
+    ".codex/skills/vibe-mathing-router/SKILL.md",
+    ".codex/skills/math-discovery/SKILL.md",
+    ".codex/skills/math-derivation/SKILL.md",
+    ".codex/skills/math-computation/SKILL.md",
+    ".codex/skills/math-proof/SKILL.md",
+    ".codex/skills/math-formalization/SKILL.md",
+    "research/AGENTS.md",
+    "result-library/AGENTS.md"
+  ],
+  "closure_equation": "Result admitted iff statement identity and faithfulness, required typed evidence, independent replay, root obligation closure, freshness, and no effective conflict all hold."
+}

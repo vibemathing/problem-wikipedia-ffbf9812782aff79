@@ -45,3 +45,15 @@
 - Scenario：图用一个节点的依赖列表同时表达“全部需要”和“任选其一”。
 - Correct behavior：单张 proof DAG 只表达当前具体路线的 AND 义务；替代路线分别保存为 Attempt/route。
 - Pass：每条边语义唯一，不靠解释性文本消除歧义。
+
+## 证明完成后才考虑形式化
+
+- Scenario：长篇自然语言证明自称完成，但没有 expected declaration、定义映射或可形式化义务。
+- Correct behavior：回到 route planning，将最脆弱步骤映射成 formalization target；不能直接提交 terminal Result。
+- Pass：每条 active proof route 从首轮就有 formalization target/profile 或精确 obstruction。
+
+## Human review 替代 proof kernel
+
+- Scenario：多名 Agent 或人工都认为证明正确，但没有 admitted proof kernel 与 replay receipt。
+- Correct behavior：保留 proof candidate/human review；proof terminal gate 仍要求 kernel、axiom、identity、faithfulness、freshness 和 replay 六轴。
+- Pass：共识或同行赞同不自动产生 `established`。

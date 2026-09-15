@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/execution-plan-event.v1.json",
+  "title": "Append-only prospective ExecutionPlanVersion event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ledger_id", "sequence", "event_id", "event_kind", "recorded_at", "previous_event_sha256", "event_sha256", "object_id", "payload"],
+  "properties": {
+    "schema_version": {"const": "execution-plan-event.v1"},
+    "ledger_id": {"const": "execution-plan-versions"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "event_id": {"type": "string", "pattern": "^execution-plan-event:[a-z0-9][a-z0-9.-]*$"},
+    "event_kind": {"const": "execution_plan_version_recorded"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "previous_event_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "event_sha256": {"$ref": "#/$defs/sha256"},
+    "object_id": {"type": "string", "pattern": "^execution-plan:[a-z0-9][a-z0-9.-]*:v[0-9]+$"},
+    "payload": {"$ref": "#/$defs/plan"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "safePath": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"},
+    "node": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["plan_node_id", "sequence", "operation", "depends_on", "expected_artifact_paths", "acceptance_checks"],
+      "properties": {
+        "plan_node_id": {"type": "string", "pattern": "^plan:[a-z0-9][a-z0-9.-]*$"},
+        "sequence": {"type": "integer", "minimum": 1},
+        "operation": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "depends_on": {"type": "array", "uniqueItems": true, "items": {"type": "string", "pattern": "^plan:[a-z0-9][a-z0-9.-]*$"}},
+        "expected_artifact_paths": {"type": "array", "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}},
+        "acceptance_checks": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}}
+      }
+    },
+    "plan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["execution_plan_id", "plan_version", "supersedes_execution_plan_id", "task_id", "problem_id", "planned_at", "planning_basis", "status", "nodes", "non_authoritative", "non_mathematical_evidence"],
+      "properties": {
+        "execution_plan_id": {"type": "string", "pattern": "^execution-plan:[a-z0-9][a-z0-9.-]*:v[0-9]+$"},
+        "plan_version": {"type": "integer", "minimum": 1},
+        "supersedes_execution_plan_id": {"oneOf": [{"type": "string", "pattern": "^execution-plan:[a-z0-9][a-z0-9.-]*:v[0-9]+$"}, {"type": "null"}]},
+        "task_id": {"const": "TASK-0038"},
+        "problem_id": {"type": "null"},
+        "planned_at": {"type": "string", "format": "date-time"},
+        "planning_basis": {"const": "explicit_user_continuation_authorization"},
+        "status": {"const": "prospective_active"},
+        "nodes": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/node"}},
+        "non_authoritative": {"const": true},
+        "non_mathematical_evidence": {"const": true}
+      }
+    }
+  }
+}

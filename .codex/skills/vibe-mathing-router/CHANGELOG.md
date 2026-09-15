@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0
+
+- 每个 active Problem 首次规划必须产生 formalization readiness、target/profile 或精确 obstruction。
+- 形式验证不可绕过不等于每步执行 Lean；反例和探索继续使用适配的独立 typed route。
+
+## 0.6.0
+
+- 继承 Verified AI Mathematical Research Foundation；按 D01–D11 路由最短可验证义务。
+- 禁止由 Job、会话、PR、CI 或 verifier 状态自动晋升 Result。
+
 ## 0.5.0
 
 - 新增 `outcome-space-search` 路由：active ProblemContract 已冻结但攻击目标空间/frontier 不清时，先生成 candidate-only OSPS plan。

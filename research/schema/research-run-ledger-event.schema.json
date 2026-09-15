@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/research-run-ledger-event.v1.json",
+  "title": "Append-only research RunEvent and ArtifactBinding ledger event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ledger_id",
+    "sequence",
+    "event_id",
+    "event_kind",
+    "recorded_at",
+    "previous_event_sha256",
+    "event_sha256",
+    "object_kind",
+    "object_id",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {"const": "research-run-ledger-event.v1"},
+    "ledger_id": {"const": "research-run-and-artifact-bindings"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "event_id": {"type": "string", "pattern": "^research-run-ledger-event:[a-z0-9][a-z0-9.-]*$"},
+    "event_kind": {"enum": ["run_event_recorded", "artifact_binding_recorded"]},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "previous_event_sha256": {"oneOf": [{"$ref": "#/$defs/sha256"}, {"type": "null"}]},
+    "event_sha256": {"$ref": "#/$defs/sha256"},
+    "object_kind": {"enum": ["run_event", "artifact_binding"]},
+    "object_id": {"type": "string", "minLength": 1},
+    "payload": {
+      "oneOf": [
+        {"$ref": "#/$defs/runEvent"},
+        {"$ref": "#/$defs/artifactBinding"}
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "safePath": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"},
+    "runEvent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_event_id",
+        "run_event_version",
+        "supersedes_run_event_id",
+        "task_id",
+        "problem_id",
+        "plan_node_id",
+        "source_round_ledger_path",
+        "source_round_ledger_sha256",
+        "source_round_id",
+        "operation",
+        "activity_state",
+        "acceptance_state",
+        "observed_at",
+        "temporal_precision",
+        "session_observation_ids",
+        "artifact_binding_ids",
+        "side_effects",
+        "mathematical_truth_change",
+        "non_authoritative",
+        "non_mathematical_evidence"
+      ],
+      "properties": {
+        "run_event_id": {"type": "string", "pattern": "^run-event:[a-z0-9][a-z0-9.-]*:v[0-9]+$"},
+        "run_event_version": {"type": "integer", "minimum": 1},
+        "supersedes_run_event_id": {"oneOf": [{"type": "string", "pattern": "^run-event:[a-z0-9][a-z0-9.-]*:v[0-9]+$"}, {"type": "null"}]},
+        "task_id": {"const": "TASK-0038"},
+        "problem_id": {"type": "null"},
+        "plan_node_id": {"type": "string", "pattern": "^plan:[a-z0-9][a-z0-9.-]*$"},
+        "source_round_ledger_path": {"$ref": "#/$defs/safePath"},
+        "source_round_ledger_sha256": {"$ref": "#/$defs/sha256"},
+        "source_round_id": {"type": "string", "pattern": "^R[0-9]{2}$"},
+        "operation": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"},
+        "activity_state": {"const": "completed"},
+        "acceptance_state": {"const": "engineering_checkpoint_accepted"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "temporal_precision": {"const": "batch_checkpoint_only"},
+        "session_observation_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^session-observation:(pi|codex):[0-9a-f-]+:v[0-9]+$"}
+        },
+        "artifact_binding_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^artifact-binding:[a-z0-9][a-z0-9.-]*:v[0-9]+$"}
+        },
+        "side_effects": {"type": "array", "maxItems": 0},
+        "mathematical_truth_change": {"const": false},
+        "non_authoritative": {"const": true},
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "artifactBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_binding_id",
+        "binding_version",
+        "supersedes_artifact_binding_id",
+        "artifact_id",
+        "artifact_path",
+        "artifact_sha256",
+        "artifact_size_bytes",
+        "media_type",
+        "binding_role",
+        "producer_run_event_id",
+        "source_round_id",
+        "admission_status",
+        "non_authoritative",
+        "non_mathematical_evidence"
+      ],
+      "properties": {
+        "artifact_binding_id": {"type": "string", "pattern": "^artifact-binding:[a-z0-9][a-z0-9.-]*:v[0-9]+$"},
+        "binding_version": {"type": "integer", "minimum": 1},
+        "supersedes_artifact_binding_id": {"oneOf": [{"type": "string", "pattern": "^artifact-binding:[a-z0-9][a-z0-9.-]*:v[0-9]+$"}, {"type": "null"}]},
+        "artifact_id": {"type": "string", "pattern": "^artifact:[a-z0-9][a-z0-9.-]*$"},
+        "artifact_path": {"$ref": "#/$defs/safePath"},
+        "artifact_sha256": {"$ref": "#/$defs/sha256"},
+        "artifact_size_bytes": {"type": "integer", "minimum": 1},
+        "media_type": {"enum": ["application/json", "application/x-ndjson", "text/x-python"]},
+        "binding_role": {"const": "produced_output"},
+        "producer_run_event_id": {"type": "string", "pattern": "^run-event:[a-z0-9][a-z0-9.-]*:v[0-9]+$"},
+        "source_round_id": {"type": "string", "pattern": "^R[0-9]{2}$"},
+        "admission_status": {"const": "engineering_checkpoint_only"},
+        "non_authoritative": {"const": true},
+        "non_mathematical_evidence": {"const": true}
+      }
+    }
+  }
+}

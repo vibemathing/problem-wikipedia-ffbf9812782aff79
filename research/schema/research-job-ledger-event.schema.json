@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/research-job-ledger-event.v1.json",
+  "title": "Durable bounded research Job event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "ledger_id", "sequence", "event_id", "event_kind", "recorded_at", "previous_event_sha256", "event_sha256", "object_kind", "object_id", "payload"],
+  "properties": {
+    "schema_version": {"const": "research-job-ledger-event.v1"},
+    "ledger_id": {"const": "research-job-events"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "event_id": {"type": "string", "pattern": "^research-job-event:[a-z0-9][a-z0-9.:-]*$"},
+    "event_kind": {"enum": ["job_envelope_recorded", "job_state_transitioned", "job_attempt_recorded", "job_checkpoint_recorded", "job_completion_recorded", "job_artifact_relocated"]},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "previous_event_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "event_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "object_kind": {"enum": ["job_envelope", "job_transition", "job_attempt", "job_checkpoint", "job_completion", "job_artifact_relocation"]},
+    "object_id": {"type": "string", "pattern": "^[a-z][a-z0-9.:-]*$"},
+    "payload": {
+      "oneOf": [
+        {"$ref": "#/$defs/envelope"},
+        {"$ref": "#/$defs/transition"},
+        {"$ref": "#/$defs/attempt"},
+        {"$ref": "#/$defs/checkpoint"},
+        {"$ref": "#/$defs/completion"},
+        {"$ref": "#/$defs/relocation"}
+      ]
+    }
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "safePath": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+(?:/[A-Za-z0-9_.-]+)*$"},
+    "precondition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "repository_commit", "path", "git_blob_oid", "content_sha256"],
+      "properties": {
+        "kind": {"const": "commit_pinned_blob"},
+        "repository_commit": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+        "path": {"$ref": "#/$defs/safePath"},
+        "git_blob_oid": {"type": "string", "pattern": "^[a-f0-9]{40,64}$"},
+        "content_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["max_attempts", "timeout_seconds_per_attempt", "max_output_bytes", "max_output_files"],
+      "properties": {
+        "max_attempts": {"type": "integer", "minimum": 1},
+        "timeout_seconds_per_attempt": {"type": "integer", "minimum": 1},
+        "max_output_bytes": {"type": "integer", "minimum": 1},
+        "max_output_files": {"type": "integer", "minimum": 1}
+      }
+    },
+    "envelope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["job_id", "job_version", "task_id", "problem_id", "operation", "adapter", "idempotency_key", "requested_at", "initial_state", "budgets", "preconditions", "expected_artifact_paths", "side_effect_policy", "non_authoritative", "non_mathematical_evidence"],
+      "properties": {
+        "job_id": {"type": "string", "pattern": "^job:[a-z0-9][a-z0-9.-]*:v[0-9]+$"},
+        "job_version": {"const": 1},
+        "task_id": {"const": "TASK-0038"},
+        "problem_id": {"type": "null"},
+        "operation": {"const": "synthetic_crash_retry_recovery"},
+        "adapter": {"const": "synthetic-bounded-job"},
+        "idempotency_key": {"type": "string", "pattern": "^sha256:[a-f0-9]{64}$"},
+        "requested_at": {"type": "string", "format": "date-time"},
+        "initial_state": {"const": "planned"},
+        "budgets": {"$ref": "#/$defs/budget"},
+        "preconditions": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/precondition"}},
+        "expected_artifact_paths": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/safePath"}},
+        "side_effect_policy": {"const": "none"},
+        "non_authoritative": {"const": true},
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "transition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["transition_id", "job_id", "from_state", "to_state", "reason", "transitioned_at", "non_mathematical_evidence"],
+      "properties": {
+        "transition_id": {"type": "string", "pattern": "^job-transition:[a-z0-9][a-z0-9.-]*$"},
+        "job_id": {"type": "string"},
+        "from_state": {"enum": ["planned", "running", "retry_wait", "succeeded", "failed", "blocked", "cancelled"]},
+        "to_state": {"enum": ["planned", "running", "retry_wait", "succeeded", "failed", "blocked", "cancelled"]},
+        "reason": {"type": "string", "minLength": 1},
+        "transitioned_at": {"type": "string", "format": "date-time"},
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["attempt_id", "job_id", "attempt_number", "retry_of_attempt_id", "started_at", "finished_at", "outcome", "failure_code", "output_artifacts", "output_bytes", "output_files", "side_effect_receipt_ids", "non_mathematical_evidence"],
+      "properties": {
+        "attempt_id": {"type": "string", "pattern": "^job-attempt:[a-z0-9][a-z0-9.-]*$"},
+        "job_id": {"type": "string"},
+        "attempt_number": {"type": "integer", "minimum": 1},
+        "retry_of_attempt_id": {"type": ["string", "null"]},
+        "started_at": {"type": "string", "format": "date-time"},
+        "finished_at": {"type": "string", "format": "date-time"},
+        "outcome": {"enum": ["retryable_failed", "succeeded", "failed", "blocked"]},
+        "failure_code": {"type": ["string", "null"]},
+        "output_artifacts": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "sha256", "size_bytes", "media_type"],
+            "properties": {
+              "path": {"$ref": "#/$defs/safePath"},
+              "sha256": {"$ref": "#/$defs/sha256"},
+              "size_bytes": {"type": "integer", "minimum": 0},
+              "media_type": {"const": "application/json"}
+            }
+          }
+        },
+        "output_bytes": {"type": "integer", "minimum": 0},
+        "output_files": {"type": "integer", "minimum": 0},
+        "side_effect_receipt_ids": {"type": "array", "maxItems": 0},
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["checkpoint_id", "job_id", "attempt_id", "attempt_number", "checkpoint_state", "recorded_at", "preconditions_revalidated", "continuation_allowed", "output_bytes", "output_files", "non_mathematical_evidence"],
+      "properties": {
+        "checkpoint_id": {"type": "string", "pattern": "^job-checkpoint:[a-z0-9][a-z0-9.-]*$"},
+        "job_id": {"type": "string"},
+        "attempt_id": {"type": "string"},
+        "attempt_number": {"type": "integer", "minimum": 1},
+        "checkpoint_state": {"enum": ["retryable_failed", "succeeded", "failed", "blocked"]},
+        "recorded_at": {"type": "string", "format": "date-time"},
+        "preconditions_revalidated": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/precondition"}},
+        "continuation_allowed": {"type": "boolean"},
+        "output_bytes": {"type": "integer", "minimum": 0},
+        "output_files": {"type": "integer", "minimum": 0},
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "relocation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["relocation_id", "job_id", "source_path", "source_sha256", "source_size_bytes", "target_path", "target_sha256", "target_size_bytes", "reason", "relocated_at", "history_preserved", "non_authoritative", "non_mathematical_evidence"],
+      "properties": {
+        "relocation_id": {"type": "string", "pattern": "^job-artifact-relocation:[a-z0-9][a-z0-9.-]*$"},
+        "job_id": {"type": "string"},
+        "source_path": {"$ref": "#/$defs/safePath"},
+        "source_sha256": {"$ref": "#/$defs/sha256"},
+        "source_size_bytes": {"type": "integer", "minimum": 0},
+        "target_path": {"$ref": "#/$defs/safePath"},
+        "target_sha256": {"$ref": "#/$defs/sha256"},
+        "target_size_bytes": {"type": "integer", "minimum": 0},
+        "reason": {"const": "repository_split_private_compute_boundary"},
+        "relocated_at": {"type": "string", "format": "date-time"},
+        "history_preserved": {"const": true},
+        "non_authoritative": {"const": true},
+        "non_mathematical_evidence": {"const": true}
+      }
+    },
+    "completion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completion_id", "job_id", "final_state", "successful_attempt_id", "completed_at", "attempt_count", "retry_count", "side_effect_receipt_ids", "expected_artifacts_closed", "job_success_is_not_math_success", "non_authoritative", "non_mathematical_evidence"],
+      "properties": {
+        "completion_id": {"type": "string", "pattern": "^job-completion:[a-z0-9][a-z0-9.-]*$"},
+        "job_id": {"type": "string"},
+        "final_state": {"const": "succeeded"},
+        "successful_attempt_id": {"type": "string"},
+        "completed_at": {"type": "string", "format": "date-time"},
+        "attempt_count": {"type": "integer", "minimum": 1},
+        "retry_count": {"type": "integer", "minimum": 0},
+        "side_effect_receipt_ids": {"type": "array", "maxItems": 0},
+        "expected_artifacts_closed": {"const": true},
+        "job_success_is_not_math_success": {"const": true},
+        "non_authoritative": {"const": true},
+        "non_mathematical_evidence": {"const": true}
+      }
+    }
+  }
+}

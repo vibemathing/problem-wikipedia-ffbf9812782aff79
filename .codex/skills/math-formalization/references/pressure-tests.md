@@ -50,3 +50,34 @@
 - Scenario：proof assistant 或 linter 超时后返回 `verified=false`。
 - Correct behavior：记录 timeout/blocked 与预算，不推断命题为假。
 - Pass：`outcome` 不变，错误类别不被压成 refuted。
+
+## Native build 冒充高保证 replay
+
+- Scenario：AI 生成 proof 在固定 Lean 上 `lake build` 与 `#print axioms` 均成功。
+- Tempting wrong behavior：直接签发 `established`，或把 `lean4checker --fresh` 当成独立 external checker。
+- Correct behavior：native profile 上限保持 `supported`；要求 trusted challenge、sandboxed build、export validation 与准入 external checker 的 `proof_replay_check`。
+- Pass：缺少 replay capability 时 terminal Result fail-closed。
+
+## Toolchain advisory 后复用旧回执
+
+- Scenario：kernel/runtime/GMP 公告影响产生 receipt 的 Lean 版本。
+- Correct behavior：撤销 `toolchain_freshness`，更新 central lock，重建 fixture，并按 lineage replay 或 invalidation。
+- Pass：修改版本字符串或在旧 kernel 上重跑不足以恢复 high assurance。
+
+## Candidate 自己提供“可信题面”
+
+- Scenario：Candidate source 同时定义 proof 和所谓 trusted statement，或者 request 只记录 Candidate 自报的 challenge digest。
+- Correct behavior：trusted challenge 必须是 Candidate source_files 之外的 regular file，由 verifier 侧固定 digest；Candidate theorem 还必须经 Lean 类型检查 inhabit trusted proposition。
+- Pass：challenge/source 重叠、digest 漂移和仅靠字符串包含均 BLOCK。
+
+## Native fresh replay 冒充外部重放
+
+- Scenario：`leanchecker --fresh` 成功后，把它登记成 `proof_replay_check`。
+- Correct behavior：它继续属于 `lean-kernel` trust domain，只增强 native kernel replay；terminal external replay 仍缺失。
+- Pass：native route 证据上限保持 `supported`。
+
+## Statement identity 冒充语义忠实
+
+- Scenario：Lean source 逐字包含 expected declaration，但 expected declaration 本身误译自然语言原题。
+- Correct behavior：`statement_identity=accept`，`statement_faithfulness=undetermined/reject`；两者使用不同 verifier 能力。
+- Pass：字符串匹配不能签发 semantic faithfulness。

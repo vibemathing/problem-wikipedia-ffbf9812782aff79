@@ -122,6 +122,7 @@ def main() -> int:
                 "--project-root", str(source_root),
                 "--problem-file", str(problem_file),
                 "--repository", repository,
+                "--default-branch", str(old.get("repository_identity", {}).get("default_branch", "main")),
                 "--visibility", visibility,
                 "--default-branch", str(identity.get("default_branch", "main")),
                 "--output", str(built),
@@ -136,6 +137,7 @@ def main() -> int:
                 command.append("--allow-draft-problem")
             if args.allow_unadmitted_problem:
                 command.append("--allow-unadmitted-problem")
+            identity = old.get("repository_identity", {})
             if identity.get("binding_state") == "verified":
                 command.extend([
                     "--repository-database-id", str(identity["database_id"]),
@@ -149,12 +151,18 @@ def main() -> int:
             if result.returncode != 0:
                 raise RuntimeError(result.stderr.strip() or "replacement Harness build failed")
             new = load_json(built / "HARNESS_SNAPSHOT.json")
+            release_policy = load_json(built / "WEB_OUTPUT_CONTRACT.json")["formal_verification_policy"]
+            release_eligible = release_policy.get("harness_release_eligible") is True
+            release_blocker = release_policy.get("harness_release_blocker")
+            if args.apply and not release_eligible:
+                raise RuntimeError(f"replacement Harness is source-only: {release_blocker or 'qualification pending'}")
             merge_snapshot_history(target, built, new)
             old_files = by_path(old)
             new_files = by_path(new)
             added = sorted(set(new_files) - set(old_files))
             removed = sorted(set(old_files) - set(new_files))
             changed = sorted(path for path in set(old_files) & set(new_files) if old_files[path]["sha256"] != new_files[path]["sha256"] or old_files[path]["mode"] != new_files[path]["mode"])
+            generated = ["WEB_BOOTSTRAP.md", "WEB_CONTEXT_BUNDLE.md", "WEB_CHANNEL_PROFILE.json", "WEB_ACTIVE_SKILLS.json", "WEB_OUTPUT_CONTRACT.json", "HARNESS_SNAPSHOT.json"]
             generated = ["WEB_BOOTSTRAP.md", "WEB_CONTEXT_BUNDLE.md", "WEB_CHANNEL_PROFILE.json", "WEB_ACTIVE_SKILLS.json", "WEB_OUTPUT_CONTRACT.json", "HARNESS_SNAPSHOT.json", "HARNESS_SNAPSHOT_HISTORY.json"]
             changed_generated = sorted(path for path in generated if not (target / path).is_file() or sha256_file(target / path) != sha256_file(built / path))
             drift = bool(added or removed or changed or changed_generated)
@@ -185,6 +193,8 @@ def main() -> int:
             report = {
                 "decision": "PASS" if args.apply or not drift else "DRIFT",
                 "mode": "apply" if args.apply else "check",
+                "release_eligible": release_eligible,
+                "release_blocker": release_blocker,
                 "old_tree_sha256": old.get("tree_sha256"),
                 "new_tree_sha256": new.get("tree_sha256"),
                 "added": added,

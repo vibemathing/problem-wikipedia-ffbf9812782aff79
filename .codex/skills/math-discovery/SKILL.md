@@ -7,6 +7,10 @@ description: "数学问题发现与证据检索。用于界定研究问题、查
 
 把模糊兴趣变成可界定、可检索、可证伪的数学问题，并产出来源可追溯的证据图。
 
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+
+继承 `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md` 的 D01–D02：来源观察先做身份解析、去重和题面冻结；发现输出不得越过 ProblemContract 准入，也不得把 source status 或“未搜到”改写成数学 Result。
+
 ## When to Use This Skill
 
 - 需要查询某个定义、定理、证明技术或问题的前人工作。

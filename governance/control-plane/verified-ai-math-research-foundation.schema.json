@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/verified-ai-math-research-foundation.v1.json",
+  "title": "Verified AI Mathematical Research Foundation Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "policy_id", "status", "marker", "normative_standard_path",
+    "metamodel_root", "invariants", "loop", "promotion_profiles",
+    "forbidden_substitutions", "required_agent_surfaces", "closure_equation"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "policy_id": {"const": "verified-ai-math-research-foundation:v1"},
+    "status": {"const": "active"},
+    "marker": {"const": "VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1"},
+    "normative_standard_path": {"const": "governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md"},
+    "metamodel_root": {"const": "PLFB"},
+    "invariants": {
+      "type": "array", "minItems": 14, "maxItems": 14,
+      "items": {"$ref": "#/$defs/invariant"}
+    },
+    "loop": {
+      "type": "array", "minItems": 11, "maxItems": 11,
+      "items": {"$ref": "#/$defs/stage"}
+    },
+    "promotion_profiles": {
+      "type": "object", "additionalProperties": false,
+      "required": ["supported", "established_proof", "refuted_counterexample"],
+      "properties": {
+        "supported": {"$ref": "#/$defs/promotion"},
+        "established_proof": {"$ref": "#/$defs/promotion"},
+        "refuted_counterexample": {"$ref": "#/$defs/promotion"}
+      }
+    },
+    "forbidden_substitutions": {
+      "type": "array", "minItems": 10, "uniqueItems": true,
+      "items": {"type": "string", "minLength": 3}
+    },
+    "required_agent_surfaces": {
+      "type": "array", "minItems": 8, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"}
+    },
+    "closure_equation": {"type": "string", "minLength": 40}
+  },
+  "$defs": {
+    "face": {"type": "string", "pattern": "^F(?:0[1-9]|1[0-3])$"},
+    "invariant": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "faces", "enforcement"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^FND-(?:0[1-9]|1[0-4])$"},
+        "name": {"type": "string", "minLength": 3},
+        "faces": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/face"}},
+        "enforcement": {"enum": ["schema", "validator", "admission_gate", "runtime", "governance"]}
+      }
+    },
+    "stage": {
+      "type": "object", "additionalProperties": false,
+      "required": ["id", "name", "faces", "input_class", "output_class", "gate", "may_auto_promote_result"],
+      "properties": {
+        "id": {"type": "string", "pattern": "^D(?:0[1-9]|1[01])$"},
+        "name": {"enum": ["discover", "identify", "model", "plan", "explore", "formalize", "prove_refute", "verify", "admit", "synthesize", "feedback"]},
+        "faces": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"$ref": "#/$defs/face"}},
+        "input_class": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "output_class": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "gate": {"type": "string", "minLength": 3},
+        "may_auto_promote_result": {"const": false}
+      }
+    },
+    "promotion": {
+      "type": "object", "additionalProperties": false,
+      "required": ["outcome", "kind", "required_capabilities", "require_independent", "require_root_closure", "conflict_policy"],
+      "properties": {
+        "outcome": {"enum": ["supported", "established", "refuted"]},
+        "kind": {"enum": ["bounded_support", "proof", "counterexample"]},
+        "required_capabilities": {
+          "type": "array", "minItems": 1, "uniqueItems": true,
+          "items": {"enum": ["numeric_check", "symbolic_check", "human_review", "kernel_check", "counterexample_check", "axiom_escape_audit", "statement_identity", "statement_faithfulness", "toolchain_freshness", "proof_replay_check", "prior_art_review"]}
+        },
+        "require_independent": {"type": "boolean"},
+        "require_root_closure": {"type": "boolean"},
+        "conflict_policy": {"const": "freeze"}
+      }
+    }
+  }
+}

@@ -1,0 +1,242 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/lean-kernel-receipt.v1.json",
+  "title": "Vibe Mathing Lean Kernel Verification Receipt",
+  "description": "A fresh replay receipt. Its verdict is deliberately limited to checked, rejected, or tool_error; it is not by itself an axiom or statement-faithfulness decision.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,255}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locator", "sha256"],
+      "properties": {
+        "locator": {"$ref": "#/$defs/text"},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "media_type": {"$ref": "#/$defs/text"}
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lean_version", "lake_version", "mathlib_commit", "manifest_sha256", "toolchain_fingerprint"],
+      "properties": {
+        "lean_version": {"$ref": "#/$defs/text"},
+        "lake_version": {"$ref": "#/$defs/text"},
+        "mathlib_commit": {"$ref": "#/$defs/text"},
+        "manifest_sha256": {"$ref": "#/$defs/digest"},
+        "toolchain_fingerprint": {"$ref": "#/$defs/digest"},
+        "profile": {"$ref": "#/$defs/text"}
+      }
+    },
+    "command": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["argv", "exit_code"],
+      "properties": {
+        "argv": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "exit_code": {"type": "integer"},
+        "executor": {"enum": ["subprocess", "in_process"]}
+      }
+    },
+    "declaration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "statement", "statement_sha256"],
+      "properties": {
+        "name": {"$ref": "#/$defs/text"},
+        "statement": {"$ref": "#/$defs/text"},
+        "statement_sha256": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "input_digests": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["package_sha256", "source_sha256"],
+          "properties": {
+            "package_sha256": {"$ref": "#/$defs/digest"},
+            "source_sha256": {"$ref": "#/$defs/digest"},
+            "problem_contract_sha256": {"$ref": "#/$defs/digest"},
+            "attempt_sha256": {"$ref": "#/$defs/digest"},
+            "graph_sha256": {"$ref": "#/$defs/digest"},
+            "obligation_sha256": {"$ref": "#/$defs/digest"},
+            "candidate_sha256": {"$ref": "#/$defs/digest"},
+            "manifest_sha256": {"$ref": "#/$defs/digest"}
+          }
+        },
+        {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/digest"}
+        }
+      ]
+    },
+    "freshness": {
+      "anyOf": [
+        {"type": "string", "format": "date-time"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["checked_at"],
+          "properties": {
+            "checked_at": {"type": "string", "format": "date-time"},
+            "replay_id": {"$ref": "#/$defs/identifier"}
+          }
+        }
+      ]
+    },
+    "failure_class": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "TOOLCHAIN_UNAVAILABLE",
+        "ENVIRONMENT_MISMATCH",
+        "PARSE_ERROR",
+        "ELABORATION_ERROR",
+        "PROOF_GAP",
+        "SORRY_OR_ADMIT",
+        "AXIOM_ESCAPE",
+        "SELF_REFERENCE",
+        "STATEMENT_MISMATCH",
+        "TIMEOUT",
+        "RESOURCE_EXCEEDED",
+        "TRANSPORT_FAILURE",
+        "EXTERNAL_VERDICT_UNREPLAYED",
+        "KERNEL_REJECTED",
+        "FAITHFULNESS_NEEDS_REVIEW",
+        "CHECKER_ERROR",
+        "TOOL_ERROR"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "lean_job_id",
+    "package_id",
+    "problem_id",
+    "problem_contract_sha256",
+    "attempt_id",
+    "graph_id",
+    "obligation_id",
+    "candidate_id",
+    "input_digests",
+    "toolchain",
+    "command",
+    "verified_declaration",
+    "proof_artifact",
+    "stdout",
+    "stderr",
+    "freshness",
+    "verdict",
+    "failure_class",
+    "principal",
+    "execution_environment_digest",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "receipt_id": {"$ref": "#/$defs/identifier"},
+    "lean_job_id": {"$ref": "#/$defs/identifier"},
+    "job_id": {"$ref": "#/$defs/identifier"},
+    "package_id": {"$ref": "#/$defs/identifier"},
+    "problem_id": {"$ref": "#/$defs/identifier"},
+    "problem_contract_sha256": {"$ref": "#/$defs/digest"},
+    "attempt_id": {"$ref": "#/$defs/identifier"},
+    "graph_id": {"$ref": "#/$defs/identifier"},
+    "obligation_id": {"$ref": "#/$defs/identifier"},
+    "candidate_id": {"$ref": "#/$defs/identifier"},
+    "coordinator_job_id": {"$ref": "#/$defs/identifier"},
+    "coordinator_run_instance_id": {"$ref": "#/$defs/identifier"},
+    "coordinator_session_id": {"$ref": "#/$defs/identifier"},
+    "coordinator_attempt_id": {"$ref": "#/$defs/identifier"},
+    "coordinator_dedupe_key": {"$ref": "#/$defs/identifier"},
+    "input_digests": {"$ref": "#/$defs/input_digests"},
+    "toolchain": {"$ref": "#/$defs/toolchain"},
+    "environment": {"$ref": "#/$defs/toolchain"},
+    "command": {"$ref": "#/$defs/command"},
+    "verified_declaration": {"$ref": "#/$defs/declaration"},
+    "declaration": {"$ref": "#/$defs/declaration"},
+    "proof_artifact": {"$ref": "#/$defs/ref"},
+    "proof_source": {"$ref": "#/$defs/ref"},
+    "stdout": {"$ref": "#/$defs/ref"},
+    "stderr": {"$ref": "#/$defs/ref"},
+    "freshness": {"$ref": "#/$defs/freshness"},
+    "checked_at": {"type": "string", "format": "date-time"},
+    "verdict": {"enum": ["checked", "rejected", "tool_error"]},
+    "failure_class": {"$ref": "#/$defs/failure_class"},
+    "principal": {
+      "anyOf": [
+        {"$ref": "#/$defs/text"},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "role"],
+          "properties": {
+            "id": {"$ref": "#/$defs/text"},
+            "role": {"enum": ["verifier", "generator", "coordinator"]}
+          }
+        }
+      ]
+    },
+    "execution_environment_digest": {"$ref": "#/$defs/digest"},
+    "environment_digest": {"$ref": "#/$defs/digest"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "metadata": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "anyOf": [
+        {"required": ["toolchain"]},
+        {"required": ["environment"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["verified_declaration"]},
+        {"required": ["declaration"]}
+      ]
+    },
+    {
+      "if": {
+        "required": ["verdict"],
+        "properties": {"verdict": {"const": "checked"}}
+      },
+      "then": {
+        "properties": {
+          "failure_class": {"const": null},
+          "command": {"properties": {"exit_code": {"const": 0}}}
+        }
+      }
+    },
+    {
+      "if": {
+        "required": ["verdict"],
+        "properties": {"verdict": {"enum": ["rejected", "tool_error"]}}
+      },
+      "then": {
+        "required": ["failure_class"],
+        "not": {"properties": {"failure_class": {"const": null}}}
+      }
+    }
+  ]
+}

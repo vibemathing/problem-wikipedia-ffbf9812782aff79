@@ -114,6 +114,16 @@ def verify_smt_fixture(
             "verdict": "accept" if counterexample_ok else "reject",
         },
     )
+    identity_locator = _write_output(
+        project_root,
+        run_key,
+        "smt-statement-identity",
+        {
+            "expected": EXPECTED_STATEMENT,
+            "actual": statement,
+            "match": faithfulness_ok,
+        },
+    )
     faithfulness_locator = _write_output(
         project_root,
         run_key,
@@ -139,6 +149,20 @@ def verify_smt_fixture(
             command=["internal-verifier", BACKEND],
             executor="in_process",
             notes="SymPy 命题 SAT、QF-LRA 与精确有理数 witness 复核",
+        ),
+        create_evidence_receipt(
+            project_root=project_root,
+            result=result,
+            generator="smt-generator",
+            evidence_id=f"evidence:{run_key}.identity",
+            capability="statement_identity",
+            verdict="accept" if faithfulness_ok else "reject",
+            verifier="smt-statement-identity-verifier",
+            checked_at=checked_at,
+            output_locator=identity_locator,
+            command=["internal-verifier", "smt-statement-identity-v1"],
+            executor="in_process",
+            notes="固定 SMT fixture 的题面与反例检查目标身份绑定",
         ),
         create_evidence_receipt(
             project_root=project_root,

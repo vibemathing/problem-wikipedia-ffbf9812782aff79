@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/conversation-assignment-event.v1.json",
+  "title": "Append-only versioned Web conversation assignment event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ledger_id",
+    "sequence",
+    "event_id",
+    "event_type",
+    "recorded_at",
+    "previous_event_sha256",
+    "event_sha256",
+    "assignment"
+  ],
+  "properties": {
+    "schema_version": {"const": "conversation-assignment-event.v1"},
+    "ledger_id": {"const": "conversation-assignments"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "event_id": {"type": "string", "pattern": "^assignment-event:[a-z0-9][a-z0-9.-]*$"},
+    "event_type": {"const": "assignment_recorded"},
+    "recorded_at": {"type": "string", "format": "date-time"},
+    "previous_event_sha256": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/sha256"}
+      ]
+    },
+    "event_sha256": {"$ref": "#/$defs/sha256"},
+    "assignment": {"$ref": "#/$defs/assignment"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableDateTime": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "format": "date-time"}
+      ]
+    },
+    "nullableCommit": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "pattern": "^[a-f0-9]{40}$"}
+      ]
+    },
+    "assignment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assignment_id",
+        "assignment_version",
+        "conversation_id",
+        "project_id",
+        "assignment_status",
+        "problem_id",
+        "repository",
+        "problem_contract_sha256",
+        "task_id",
+        "observed_at",
+        "effective_window",
+        "repository_revision_at_observation",
+        "plan_graph_id",
+        "run_graph_id",
+        "source_refs",
+        "source_observation_ids",
+        "supersedes_assignment_id",
+        "non_authoritative"
+      ],
+      "properties": {
+        "assignment_id": {"type": "string", "pattern": "^conversation-assignment:[a-f0-9-]{36}:v[1-9][0-9]*$"},
+        "assignment_version": {"type": "integer", "minimum": 1},
+        "conversation_id": {"type": "string", "format": "uuid"},
+        "project_id": {"type": "string", "pattern": "^g-p-[a-z0-9]+$"},
+        "assignment_status": {"enum": ["active", "historical", "closed", "invalidated"]},
+        "problem_id": {"type": "string", "pattern": "^problem:[a-z0-9][a-z0-9.-]*$"},
+        "repository": {"type": "string", "pattern": "^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$"},
+        "problem_contract_sha256": {"$ref": "#/$defs/sha256"},
+        "task_id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]*$"},
+        "observed_at": {"type": "string", "format": "date-time"},
+        "effective_window": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["not_before", "not_after", "precision"],
+          "properties": {
+            "not_before": {"$ref": "#/$defs/nullableDateTime"},
+            "not_after": {"$ref": "#/$defs/nullableDateTime"},
+            "precision": {"enum": ["observed_at_only", "bounded", "exact"]}
+          }
+        },
+        "repository_revision_at_observation": {"$ref": "#/$defs/nullableCommit"},
+        "plan_graph_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^dag:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"}
+          ]
+        },
+        "run_graph_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^dag:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"}
+          ]
+        },
+        "source_refs": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^[A-Za-z0-9_./-]+$"}
+        },
+        "source_observation_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^observation:[a-z0-9][a-z0-9.-]*:v[1-9][0-9]*$"}
+        },
+        "supersedes_assignment_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^conversation-assignment:[a-f0-9-]{36}:v[1-9][0-9]*$"}
+          ]
+        },
+        "non_authoritative": {"const": true}
+      }
+    }
+  }
+}

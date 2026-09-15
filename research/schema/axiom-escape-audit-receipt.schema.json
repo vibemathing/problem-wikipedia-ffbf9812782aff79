@@ -1,0 +1,126 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/axiom-escape-audit-receipt.v1.json",
+  "title": "Vibe Mathing Axiom Escape Audit Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "receipt_type",
+    "subject",
+    "source_set",
+    "source_set_sha256",
+    "allowed_axioms",
+    "allowed_axioms_policy_sha256",
+    "observed_axioms",
+    "environment",
+    "source_lex_status",
+    "findings",
+    "verdict",
+    "auditor",
+    "audited_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "receipt_id": {"type": "string", "pattern": "^axiom-audit:[a-z0-9][a-z0-9.-]*$"},
+    "receipt_type": {"const": "axiom_escape_audit"},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "problem_id": {"type": ["string", "null"]},
+        "attempt_id": {"type": ["string", "null"]},
+        "candidate_id": {"type": ["string", "null"]},
+        "obligation_id": {"type": ["string", "null"]},
+        "problem_contract_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "statement_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "formal_statement_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "source_set": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["locator", "sha256"],
+        "properties": {
+          "locator": {"type": "string", "minLength": 1},
+          "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"}
+        }
+      }
+    },
+    "source_set_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "allowed_axioms": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "allowed_axioms_policy_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "observed_axioms": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "source_declarations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "allowed", "line"],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "allowed": {"type": "boolean"},
+          "line": {"type": "integer", "minimum": 1}
+        }
+      }
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command_status",
+        "axiom_parse_status",
+        "environment_digest",
+        "expected_environment_digest",
+        "observed_environment_digest",
+        "axiom_output_sha256",
+        "source_set_sha256"
+      ],
+      "properties": {
+        "command_status": {"enum": ["pass", "fail", "tool_error", "missing", "unknown"]},
+        "axiom_parse_status": {"enum": ["provided", "parsed", "empty", "unparsed", "missing"]},
+        "toolchain_id": {"type": ["string", "null"]},
+        "toolchain_version": {"type": ["string", "null"]},
+        "environment_digest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "expected_environment_digest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "observed_environment_digest": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "axiom_output_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "source_set_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+        "identity": {"type": "object", "additionalProperties": true}
+      }
+    },
+    "source_lex_status": {"enum": ["pass", "fail", "needs_review", "missing"]},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["code", "severity", "message"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "severity": {"enum": ["error", "warning", "info"]},
+          "message": {"type": "string", "minLength": 1},
+          "locator": {"type": ["string", "null"]},
+          "line": {"type": ["integer", "null"], "minimum": 1},
+          "column": {"type": ["integer", "null"], "minimum": 1},
+          "details": {"type": "object", "additionalProperties": true}
+        }
+      }
+    },
+    "verdict": {"enum": ["pass", "fail", "needs_review", "undetermined"]},
+    "auditor": {"type": "string", "minLength": 1},
+    "audited_at": {"type": "string", "format": "date-time"},
+    "capability_boundary": {"type": "string", "minLength": 1}
+  }
+}

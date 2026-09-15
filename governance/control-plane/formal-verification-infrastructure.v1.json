@@ -1,0 +1,69 @@
+{
+  "schema_version": "formal-verification-infrastructure.v1",
+  "policy_id": "FORMAL_VERIFICATION_INFRASTRUCTURE_V1",
+  "conceptual_root": "PLFB",
+  "foundation_policy": "VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1",
+  "normative_standard_path": "governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md",
+  "decision": {
+    "formal_verification_role": "mandatory_cross_face_infrastructure",
+    "lean_role": "default_reference_kernel_and_required_compatibility_lane",
+    "universal_formalization_readiness_required": true,
+    "universal_lean_execution_required": false,
+    "alternate_proof_assistant_policy": "allowed_only_after_equivalent_typed_verifier_admission"
+  },
+  "assurance_profiles": {
+    "candidate_formalization": {
+      "evidence_ceiling": "candidate_only",
+      "required_capabilities": [],
+      "required_controls": ["frozen_statement", "explicit_domain_quantifiers", "toolchain_plan_or_obstruction"]
+    },
+    "native_kernel": {
+      "evidence_ceiling": "supported",
+      "required_capabilities": ["kernel_check", "axiom_escape_audit", "statement_identity", "statement_faithfulness", "toolchain_freshness"],
+      "required_controls": ["exact_toolchain_lock", "manifest_lock", "trusted_challenge_statement", "fresh_build", "native_fresh_recheck", "no_escape", "independent_semantic_review"]
+    },
+    "adversarial_high_assurance": {
+      "evidence_ceiling": "terminal_result",
+      "required_capabilities": ["kernel_check", "axiom_escape_audit", "statement_identity", "statement_faithfulness", "toolchain_freshness", "proof_replay_check"],
+      "required_controls": ["trusted_challenge_statement", "sandboxed_build", "exported_proof_validation", "independent_external_checker", "root_obligation_closure", "no_active_conflict"]
+    }
+  },
+  "terminal_paths": {
+    "established_proof": {
+      "required_profile": "adversarial_high_assurance",
+      "required_capabilities": ["kernel_check", "axiom_escape_audit", "statement_identity", "statement_faithfulness", "toolchain_freshness", "proof_replay_check"],
+      "lean_execution_required": true,
+      "root_closure_required": true,
+      "independence_required": true
+    },
+    "refuted_counterexample": {
+      "required_profile": "typed_counterexample",
+      "required_capabilities": ["counterexample_check", "statement_identity", "statement_faithfulness"],
+      "lean_execution_required": false,
+      "root_closure_required": true,
+      "independence_required": true
+    }
+  },
+  "lifecycle": {
+    "advisory_invalidates_freshness": true,
+    "version_change_requires_replay": true,
+    "conflict_policy": "freeze",
+    "missing_runtime_semantics": "blocked_not_refuted"
+  },
+  "goal_distribution": {
+    "canonical_main_goal_files_mutable": false,
+    "protected_path": "governance/tasks/millennium-goals/",
+    "delivery_mode": "separate_research_branch_patch",
+    "required_on_next_authorized_goal_replacement": true,
+    "status": "blocked_pending_explicit_research_branch_rollout"
+  },
+  "required_surfaces": [
+    "AGENTS.md",
+    ".codex/AGENTS.md",
+    ".codex/skills/vibe-mathing-router/SKILL.md",
+    ".codex/skills/math-proof/SKILL.md",
+    ".codex/skills/math-formalization/SKILL.md",
+    "research/AGENTS.md",
+    "result-library/AGENTS.md"
+  ]
+}

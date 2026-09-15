@@ -1,0 +1,155 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/coordinator-job.schema.json",
+  "title": "Vibe Mathing Coordinator Job",
+  "description": "A durable, bounded execution contract. This is control-plane metadata only and is not a Problem, Attempt, Evidence, or Result.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "lease": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["holder", "lease_id", "expires_at"],
+      "properties": {
+        "holder": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "lease_id": {
+          "type": ["string", "null"],
+          "minLength": 1,
+          "maxLength": 256
+        },
+        "expires_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        },
+        "claimed_at": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      }
+    },
+    "execution_profile": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "schema_version",
+    "project_id",
+    "workflow_id",
+    "task_id",
+    "step_id",
+    "job_id",
+    "run_instance_id",
+    "attempt_id",
+    "session_id",
+    "dedupe_key",
+    "problem_id",
+    "problem_contract_sha256",
+    "adapter",
+    "route_id",
+    "obligation_graph_id",
+    "obligation_id",
+    "budgets",
+    "write_scopes",
+    "lease",
+    "input_digest",
+    "status",
+    "created_at",
+    "updated_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "project_id": {"$ref": "#/$defs/identifier"},
+    "workflow_id": {"$ref": "#/$defs/identifier"},
+    "task_id": {"$ref": "#/$defs/identifier"},
+    "step_id": {"$ref": "#/$defs/identifier"},
+    "job_id": {"$ref": "#/$defs/identifier"},
+    "run_instance_id": {"$ref": "#/$defs/identifier"},
+    "attempt_id": {"$ref": "#/$defs/identifier"},
+    "session_id": {"$ref": "#/$defs/identifier"},
+    "dedupe_key": {"$ref": "#/$defs/identifier"},
+    "problem_id": {"$ref": "#/$defs/identifier"},
+    "problem_contract_sha256": {"$ref": "#/$defs/digest"},
+    "problem_contract_digest": {"$ref": "#/$defs/digest"},
+    "adapter": {"$ref": "#/$defs/identifier"},
+    "tool_fingerprint": {"$ref": "#/$defs/identifier"},
+    "route_id": {"$ref": "#/$defs/identifier"},
+    "obligation_graph_id": {"$ref": "#/$defs/identifier"},
+    "obligation_id": {"$ref": "#/$defs/identifier"},
+    "budgets": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeout_seconds", "max_output_bytes"],
+      "properties": {
+        "timeout_seconds": {"$ref": "#/$defs/positiveInteger"},
+        "max_output_bytes": {"$ref": "#/$defs/positiveInteger"},
+        "max_memory_bytes": {"$ref": "#/$defs/positiveInteger"},
+        "max_cpu_seconds": {"$ref": "#/$defs/positiveInteger"},
+        "max_files": {"$ref": "#/$defs/positiveInteger"},
+        "max_retries": {"$ref": "#/$defs/positiveInteger"},
+        "max_transitions": {"$ref": "#/$defs/positiveInteger"}
+      }
+    },
+    "write_scopes": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1, "maxLength": 1024}
+    },
+    "lease": {"$ref": "#/$defs/lease"},
+    "input_digest": {"$ref": "#/$defs/digest"},
+    "input_digests": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/digest"}
+    },
+    "execution_profile": {"$ref": "#/$defs/execution_profile"},
+    "metadata": {"$ref": "#/$defs/metadata"},
+    "status": {
+      "enum": [
+        "new",
+        "ready",
+        "claimed",
+        "started",
+        "checkpointed",
+        "candidate_ready",
+        "verifying",
+        "verifier_completed",
+        "completed",
+        "blocked",
+        "failed",
+        "cancelled"
+      ]
+    },
+    "checkpoint_digest": {"$ref": "#/$defs/digest"},
+    "output_digest": {"$ref": "#/$defs/digest"},
+    "retry_count": {"type": "integer", "minimum": 0},
+    "last_event_id": {"$ref": "#/$defs/identifier"},
+    "created_at": {"$ref": "#/$defs/timestamp"},
+    "updated_at": {"$ref": "#/$defs/timestamp"}
+  }
+}

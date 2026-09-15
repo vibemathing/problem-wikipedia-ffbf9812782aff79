@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- 继承 Verified Discovery Loop D01–D02；来源身份、题面冻结与 ProblemContract 准入先于研究。
+- 禁止把 source status 或检索空结果替代数学结论。
+
 ## 0.4.0
 
 - 增加 Mathlib/Reservoir/AFP/MathComp、OEIS/LMFDB/DLMF/SageMath 的受控知识检索与陈述关系分类。

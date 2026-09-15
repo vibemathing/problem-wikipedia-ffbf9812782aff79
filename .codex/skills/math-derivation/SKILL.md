@@ -7,6 +7,10 @@ description: "数学公式与理论线推导。用于整理散乱公式、固定
 
 建立诚实、可检查的推导链；不把解释、近似或数值现象伪装成严格证明。
 
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+
+继承 `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md` 的 D03–D05：每个推导节点绑定冻结陈述、依赖与适用域；推导文本默认是 CandidateArtifact，不得凭连贯性、自洽性或会话完成自动成为 Evidence/Result。
+
 ## When to Use This Skill
 
 - 用户要求推导公式、整理理论线或解释等式来源。

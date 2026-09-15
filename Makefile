@@ -2,6 +2,7 @@
 
 check:
 	python3 scripts/validate_mathematical_reasoning_discipline.py --project-root .
+	python3 scripts/validate_verified_ai_math_research_foundation.py --project-root . --result-ledger result-library/records/results.jsonl
 	python3 scripts/validate_web_problem_harness.py --project-root .
 	python3 scripts/validate_web_attempt.py --project-root . --all-inbox
 	python3 scripts/validate_math_knowledge_registry.py --project-root .

@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/coordinator-capacity.schema.json",
+  "title": "Vibe Mathing Coordinator Capacity Contract",
+  "description": "Capacity limits for the engineering Job scheduler. It never represents a mathematical Result.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version"],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "default_limit": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "default_max_active": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "default": {
+      "type": ["integer", "null"],
+      "minimum": 1
+    },
+    "adapter_limits": {"$ref": "#/$defs/limit_map"},
+    "project_limits": {"$ref": "#/$defs/limit_map"},
+    "worker_limits": {"$ref": "#/$defs/limit_map"},
+    "write_scope_limits": {"$ref": "#/$defs/limit_map"},
+    "adapters": {"$ref": "#/$defs/limit_map"},
+    "projects": {"$ref": "#/$defs/limit_map"},
+    "workers": {"$ref": "#/$defs/limit_map"},
+    "write_scopes": {"$ref": "#/$defs/limit_map"},
+    "adapter": {"$ref": "#/$defs/limit_map"},
+    "project": {"$ref": "#/$defs/limit_map"},
+    "worker": {"$ref": "#/$defs/limit_map"},
+    "write_scope": {"$ref": "#/$defs/limit_map"},
+    "limits": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "adapter_limits": {"$ref": "#/$defs/limit_map"},
+        "project_limits": {"$ref": "#/$defs/limit_map"},
+        "worker_limits": {"$ref": "#/$defs/limit_map"},
+        "write_scope_limits": {"$ref": "#/$defs/limit_map"},
+        "adapters": {"$ref": "#/$defs/limit_map"},
+        "projects": {"$ref": "#/$defs/limit_map"},
+        "workers": {"$ref": "#/$defs/limit_map"},
+        "write_scopes": {"$ref": "#/$defs/limit_map"},
+        "adapter": {"$ref": "#/$defs/limit_map"},
+        "project": {"$ref": "#/$defs/limit_map"},
+        "worker": {"$ref": "#/$defs/limit_map"},
+        "write_scope": {"$ref": "#/$defs/limit_map"}
+      }
+    }
+  },
+  "$defs": {
+    "limit": {
+      "oneOf": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "max_active": {"type": "integer", "minimum": 1},
+            "limit": {"type": "integer", "minimum": 1},
+            "max": {"type": "integer", "minimum": 1},
+            "slots": {"type": "integer", "minimum": 1},
+            "max_jobs": {"type": "integer", "minimum": 1},
+            "max_concurrent": {"type": "integer", "minimum": 1},
+            "concurrency": {"type": "integer", "minimum": 1}
+          },
+          "anyOf": [
+            {"required": ["max_active"]},
+            {"required": ["limit"]},
+            {"required": ["max"]},
+            {"required": ["slots"]},
+            {"required": ["max_jobs"]},
+            {"required": ["max_concurrent"]},
+            {"required": ["concurrency"]}
+          ]
+        }
+      ]
+    },
+    "limit_map": {
+      "type": "object",
+      "additionalProperties": {"$ref": "#/$defs/limit"}
+    }
+  }
+}

@@ -1,0 +1,281 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/recovery-checkpoint.v1.json",
+  "title": "Vibe Mathing Recovery Checkpoint v1",
+  "description": "An integrity-sealed, identity-bound control-plane checkpoint. It is not a mathematical Result.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:/-]*$"
+    },
+    "problemId": {
+      "type": "string",
+      "pattern": "^problem:[a-z0-9][a-z0-9.-]*$"
+    },
+    "routeId": {
+      "type": "string",
+      "pattern": "^route:[A-Za-z0-9][A-Za-z0-9_.:-]*$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "nonNegativeInteger": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "positiveInteger": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "bestVerifiedResult": {
+      "type": ["object", "null"],
+      "additionalProperties": true,
+      "properties": {
+        "claim": {"type": "string", "minLength": 1},
+        "scope": {"type": "string", "minLength": 1},
+        "verification_receipt": {"type": "string", "minLength": 1},
+        "receipt_digest": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "nextObligation": {
+      "oneOf": [
+        {"type": "string", "minLength": 1},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["obligation_id", "summary"],
+          "properties": {
+            "obligation_id": {"$ref": "#/$defs/identifier"},
+            "summary": {"type": "string", "minLength": 1},
+            "route_id": {"$ref": "#/$defs/routeId"}
+          }
+        }
+      ]
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "max_total_attempts",
+        "max_same_route_attempts",
+        "max_route_switches",
+        "max_resume_attempts",
+        "max_delivery_retries"
+      ],
+      "properties": {
+        "max_total_attempts": {"$ref": "#/$defs/positiveInteger"},
+        "max_same_route_attempts": {"$ref": "#/$defs/positiveInteger"},
+        "max_route_switches": {"$ref": "#/$defs/nonNegativeInteger"},
+        "max_resume_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+        "max_delivery_retries": {"$ref": "#/$defs/nonNegativeInteger"}
+      }
+    },
+    "usage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total_attempts",
+        "same_route_attempts",
+        "route_switches",
+        "resume_attempts",
+        "delivery_retries"
+      ],
+      "properties": {
+        "total_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+        "same_route_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+        "route_switches": {"$ref": "#/$defs/nonNegativeInteger"},
+        "resume_attempts": {"$ref": "#/$defs/nonNegativeInteger"},
+        "delivery_retries": {"$ref": "#/$defs/nonNegativeInteger"}
+      }
+    },
+    "effect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "effect_id",
+        "effect_type",
+        "payload_digest",
+        "sequence",
+        "status",
+        "committed_at"
+      ],
+      "properties": {
+        "effect_id": {"$ref": "#/$defs/identifier"},
+        "effect_type": {"enum": ["candidate", "event"]},
+        "payload_digest": {"$ref": "#/$defs/digest"},
+        "sequence": {"$ref": "#/$defs/positiveInteger"},
+        "status": {"const": "committed"},
+        "committed_at": {"$ref": "#/$defs/timestamp"}
+      }
+    },
+    "integrity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["payload_sha256", "byte_length", "commit_marker"],
+      "properties": {
+        "payload_sha256": {"$ref": "#/$defs/digest"},
+        "byte_length": {"$ref": "#/$defs/positiveInteger"},
+        "commit_marker": {"const": "VIBE-MATHING-RECOVERY-CHECKPOINT-COMMIT-V1"}
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "checkpoint_id",
+    "sequence",
+    "parent_checkpoint_digest",
+    "project_id",
+    "workflow_id",
+    "task_id",
+    "step_id",
+    "job_id",
+    "run_id",
+    "attempt_id",
+    "problem_id",
+    "session_id",
+    "route_id",
+    "provider_fingerprint",
+    "wire_api_fingerprint",
+    "model_fingerprint",
+    "tool_fingerprint",
+    "runtime_fingerprint",
+    "session_fingerprint",
+    "input_digest",
+    "problem_contract_digest",
+    "goal_digest",
+    "entrypoint_digest",
+    "status",
+    "completion_status",
+    "budget",
+    "budget_usage",
+    "best_verified_result",
+    "next_obligation",
+    "failed_route_refs",
+    "effect_ledger",
+    "migration_count",
+    "last_error_kind",
+    "created_at",
+    "updated_at",
+    "expires_at",
+    "checkpoint_digest",
+    "integrity"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "checkpoint_id": {"$ref": "#/$defs/identifier"},
+    "sequence": {"$ref": "#/$defs/positiveInteger"},
+    "parent_checkpoint_digest": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "project_id": {"$ref": "#/$defs/identifier"},
+    "workflow_id": {"$ref": "#/$defs/identifier"},
+    "task_id": {"$ref": "#/$defs/identifier"},
+    "step_id": {"$ref": "#/$defs/identifier"},
+    "job_id": {"$ref": "#/$defs/identifier"},
+    "run_id": {"$ref": "#/$defs/identifier"},
+    "attempt_id": {"$ref": "#/$defs/identifier"},
+    "problem_id": {"$ref": "#/$defs/problemId"},
+    "session_id": {"$ref": "#/$defs/identifier"},
+    "route_id": {"$ref": "#/$defs/routeId"},
+    "provider_fingerprint": {"$ref": "#/$defs/digest"},
+    "wire_api_fingerprint": {"$ref": "#/$defs/digest"},
+    "model_fingerprint": {"$ref": "#/$defs/digest"},
+    "tool_fingerprint": {"$ref": "#/$defs/digest"},
+    "runtime_fingerprint": {"$ref": "#/$defs/digest"},
+    "session_fingerprint": {"$ref": "#/$defs/digest"},
+    "input_digest": {"$ref": "#/$defs/digest"},
+    "problem_contract_digest": {"$ref": "#/$defs/digest"},
+    "goal_digest": {"$ref": "#/$defs/digest"},
+    "entrypoint_digest": {"$ref": "#/$defs/digest"},
+    "status": {
+      "enum": [
+        "active",
+        "checkpointed",
+        "stalled",
+        "parked",
+        "blocked",
+        "failed",
+        "completed"
+      ]
+    },
+    "completion_status": {
+      "enum": ["open", "candidate", "refuted", "completed"]
+    },
+    "budget": {"$ref": "#/$defs/budget"},
+    "budget_usage": {"$ref": "#/$defs/usage"},
+    "best_verified_result": {"$ref": "#/$defs/bestVerifiedResult"},
+    "next_obligation": {"$ref": "#/$defs/nextObligation"},
+    "failed_route_refs": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/routeId"}
+    },
+    "effect_ledger": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/effect"}
+    },
+    "migration_count": {"$ref": "#/$defs/nonNegativeInteger"},
+    "last_error_kind": {
+      "type": ["string", "null"],
+      "enum": [
+        null,
+        "rate_limit",
+        "network_disconnect",
+        "delivery_timeout",
+        "execution_timeout",
+        "tool_error",
+        "resource_limit",
+        "hard_stop",
+        "session_lost",
+        "invalid_checkpoint",
+        "unknown"
+      ]
+    },
+    "resume_receipt_digest": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "created_at": {"$ref": "#/$defs/timestamp"},
+    "updated_at": {"$ref": "#/$defs/timestamp"},
+    "expires_at": {"$ref": "#/$defs/timestamp"},
+    "checkpoint_digest": {"$ref": "#/$defs/digest"},
+    "integrity": {"$ref": "#/$defs/integrity"}
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {"status": {"const": "completed"}}
+      },
+      "then": {
+        "properties": {"completion_status": {"const": "completed"}}
+      }
+    },
+    {
+      "if": {
+        "properties": {"completion_status": {"const": "completed"}}
+      },
+      "then": {
+        "properties": {"status": {"const": "completed"}}
+      }
+    },
+    {
+      "not": {
+        "properties": {
+          "status": {"const": "stalled"},
+          "completion_status": {"const": "completed"}
+        }
+      }
+    }
+  ]
+}

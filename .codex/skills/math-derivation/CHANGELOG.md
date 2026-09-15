@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0
+
+- 继承 Verified Discovery Loop D03–D05；推导节点绑定陈述、依赖与适用域。
+- 推导文本默认保持 candidate，不以连贯性或会话完成替代验证与准入。
+
 ## 0.4.0
 
 - 推导前消费 ReusePlan，按 exact/stronger/weaker/analogy/unknown 比较陈述，并将未覆盖部分显式化为 Obligation。

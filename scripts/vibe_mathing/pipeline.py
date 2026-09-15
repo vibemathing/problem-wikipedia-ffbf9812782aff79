@@ -143,6 +143,12 @@ def _run_sympy_pipeline_locked(
             {"x": str(x), "x_squared": str(x**2), "x_squared_lt_x": bool(counterexample_ok)},
         )
         faithfulness_ok = problem["statement"]["text"] == EXPECTED_STATEMENT
+        identity_locator = _artifact(
+            project_root,
+            state["run_id"],
+            "statement-identity",
+            {"expected": EXPECTED_STATEMENT, "actual": problem["statement"]["text"], "match": faithfulness_ok},
+        )
         faithfulness_locator = _artifact(
             project_root,
             state["run_id"],
@@ -176,6 +182,20 @@ def _run_sympy_pipeline_locked(
                 command=["internal-verifier", "sympy-exact-rational-v1"],
                 executor="in_process",
                 notes="SymPy exact Rational 独立复算",
+            ),
+            create_evidence_receipt(
+                project_root=project_root,
+                result=result,
+                generator="sympy-generator",
+                evidence_id=f"evidence:{run_suffix}.identity",
+                capability="statement_identity",
+                verdict="accept" if faithfulness_ok else "reject",
+                verifier="sympy-statement-identity-verifier",
+                checked_at=verification_at,
+                output_locator=identity_locator,
+                command=["internal-verifier", "sympy-statement-identity-v1"],
+                executor="in_process",
+                notes="固定 fixture 的题面与反例检查目标身份绑定",
             ),
             create_evidence_receipt(
                 project_root=project_root,

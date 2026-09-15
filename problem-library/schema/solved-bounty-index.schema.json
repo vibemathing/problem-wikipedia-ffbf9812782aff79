@@ -1,0 +1,263 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/solved-bounty-index.schema.json",
+  "title": "Derived source-solved-bounty problem index",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "tag_id",
+    "source_collection",
+    "selection",
+    "sort",
+    "input",
+    "award_evidence",
+    "statistics",
+    "count",
+    "items"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "solved-bounty-index.v2"
+    },
+    "tag_id": {
+      "const": "source-solved-bounty"
+    },
+    "source_collection": {
+      "const": "mixed"
+    },
+    "selection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["admitted_rule", "candidate_rule"],
+      "properties": {
+        "admitted_rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "record_scope",
+            "status_raw",
+            "prize_field",
+            "prize_operator",
+            "prize_threshold"
+          ],
+          "properties": {
+            "source": {"const": "erdosproblems"},
+            "record_scope": {"const": "problem_page"},
+            "status_raw": {"const": "solved"},
+            "prize_field": {"const": "prize"},
+            "prize_operator": {"const": ">"},
+            "prize_threshold": {"const": 0}
+          }
+        },
+        "candidate_rule": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "source",
+            "record_scope",
+            "source_status_raw",
+            "source_status_class",
+            "award_id",
+            "award_prize_usd_each",
+            "award_scope"
+          ],
+          "properties": {
+            "source": {"const": "clay"},
+            "record_scope": {"const": "problem_page"},
+            "source_status_raw": {"const": "solved"},
+            "source_status_class": {"const": "closed_claimed"},
+            "award_id": {"const": "clay-millennium-prize"},
+            "award_prize_usd_each": {"const": 1000000},
+            "award_scope": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    },
+    "sort": {
+      "const": [
+        "prize_usd:desc",
+        "source:asc",
+        "source_order:null-last:asc",
+        "record_id:asc"
+      ]
+    },
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "records_path",
+        "records_sha256",
+        "manifest_sha256",
+        "prize_registry_path",
+        "prize_registry_sha256",
+        "candidate_latest_path",
+        "candidate_latest_sha256",
+        "candidate_snapshot_path",
+        "candidate_snapshot_sha256",
+        "candidate_snapshot_id",
+        "candidate_observations_path",
+        "candidate_observations_sha256",
+        "clay_award_evidence_path",
+        "clay_award_evidence_sha256"
+      ],
+      "properties": {
+        "records_path": {"const": "problem-library/records/problems.jsonl"},
+        "records_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_sha256": {"$ref": "#/$defs/sha256"},
+        "prize_registry_path": {"const": "problem-library/registry/prize-awards.json"},
+        "prize_registry_sha256": {"$ref": "#/$defs/sha256"},
+        "candidate_latest_path": {"const": "problem-library/derived/candidate-observations/latest.json"},
+        "candidate_latest_sha256": {"$ref": "#/$defs/sha256"},
+        "candidate_snapshot_path": {"type": "string", "pattern": "^problem-library/derived/candidate-observations/.+/snapshot\\.json$"},
+        "candidate_snapshot_sha256": {"$ref": "#/$defs/sha256"},
+        "candidate_snapshot_id": {"type": "string", "pattern": "^candidate-snapshot:.+$"},
+        "candidate_observations_path": {"type": "string", "pattern": "^problem-library/derived/candidate-observations/.+/observations\\.jsonl$"},
+        "candidate_observations_sha256": {"$ref": "#/$defs/sha256"},
+        "clay_award_evidence_path": {"const": "problem-library/raw/candidates/clay/pages/millennium-problems.html"},
+        "clay_award_evidence_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "award_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["award_id", "source", "prize_usd_each", "scope", "path", "sha256", "locator"],
+      "properties": {
+        "award_id": {"const": "clay-millennium-prize"},
+        "source": {"const": "clay"},
+        "prize_usd_each": {"const": 1000000},
+        "scope": {"type": "string", "minLength": 1},
+        "path": {"const": "problem-library/raw/candidates/clay/pages/millennium-problems.html"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "locator": {"const": "https://www.claymath.org/millennium-problems/"}
+      }
+    },
+    "statistics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "admitted_total_records",
+        "admitted_target_source_records",
+        "admitted_target_scope_records",
+        "admitted_target_solved_records",
+        "admitted_excluded_non_target_source",
+        "admitted_excluded_non_problem_page",
+        "admitted_excluded_not_solved",
+        "admitted_excluded_missing_or_nonpositive_prize",
+        "admitted_matched_records",
+        "candidate_total_observations",
+        "candidate_clay_observations",
+        "candidate_clay_solved_observations",
+        "candidate_matched_records",
+        "matched_records"
+      ],
+      "properties": {
+        "admitted_total_records": {"type": "integer", "minimum": 0},
+        "admitted_target_source_records": {"type": "integer", "minimum": 0},
+        "admitted_target_scope_records": {"type": "integer", "minimum": 0},
+        "admitted_target_solved_records": {"type": "integer", "minimum": 0},
+        "admitted_excluded_non_target_source": {"type": "integer", "minimum": 0},
+        "admitted_excluded_non_problem_page": {"type": "integer", "minimum": 0},
+        "admitted_excluded_not_solved": {"type": "integer", "minimum": 0},
+        "admitted_excluded_missing_or_nonpositive_prize": {"type": "integer", "minimum": 0},
+        "admitted_matched_records": {"type": "integer", "minimum": 0},
+        "candidate_total_observations": {"type": "integer", "minimum": 0},
+        "candidate_clay_observations": {"type": "integer", "minimum": 0},
+        "candidate_clay_solved_observations": {"type": "integer", "minimum": 0},
+        "candidate_matched_records": {"type": "integer", "minimum": 0},
+        "matched_records": {"type": "integer", "minimum": 0}
+      }
+    },
+    "count": {"type": "integer", "minimum": 0},
+    "items": {
+      "type": "array",
+      "items": {"$ref": "#/$defs/item"}
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "item": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rank",
+        "tag_id",
+        "collection",
+        "record_id",
+        "source",
+        "record_scope",
+        "source_native_id",
+        "source_order",
+        "title",
+        "status_raw",
+        "source_status_class",
+        "research_eligible",
+        "prize_currency",
+        "prize_usd",
+        "categories",
+        "detail_url",
+        "observation_basis",
+        "award_basis"
+      ],
+      "properties": {
+        "rank": {"type": "integer", "minimum": 1},
+        "tag_id": {"const": "source-solved-bounty"},
+        "collection": {"enum": ["admitted", "candidate"]},
+        "record_id": {"type": "string", "minLength": 1},
+        "source": {"type": "string", "minLength": 1},
+        "record_scope": {"const": "problem_page"},
+        "source_native_id": {"type": ["string", "null"]},
+        "source_order": {"type": ["integer", "null"], "minimum": 1},
+        "title": {"type": "string", "minLength": 1},
+        "status_raw": {"const": "solved"},
+        "source_status_class": {"type": ["string", "null"]},
+        "research_eligible": {"const": false},
+        "prize_currency": {"const": "USD"},
+        "prize_usd": {"type": "integer", "exclusiveMinimum": 0},
+        "categories": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "detail_url": {"type": "string", "format": "uri"},
+        "observation_basis": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {"const": "candidate_observation"},
+            "path": {"type": "string", "pattern": "^problem-library/derived/candidate-observations/.+/observations\\.jsonl$"},
+            "sha256": {"$ref": "#/$defs/sha256"},
+            "locator": {"type": "string", "minLength": 1},
+            "raw_artifact_path": {"type": "string", "pattern": "^problem-library/raw/candidates/"},
+            "raw_artifact_sha256": {"$ref": "#/$defs/sha256"},
+            "raw_artifact_locator": {"type": "string", "minLength": 1}
+          },
+          "required": [
+            "kind",
+            "path",
+            "sha256",
+            "locator",
+            "raw_artifact_path",
+            "raw_artifact_sha256",
+            "raw_artifact_locator"
+          ]
+        },
+        "award_basis": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["kind", "path", "sha256", "locator"],
+          "properties": {
+            "kind": {"enum": ["record_prize_field", "source_award_evidence"]},
+            "path": {"type": "string", "minLength": 1},
+            "sha256": {"$ref": "#/$defs/sha256"},
+            "locator": {"type": "string", "minLength": 1}
+          }
+        }
+      }
+    }
+  }
+}

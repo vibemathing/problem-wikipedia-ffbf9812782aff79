@@ -1,0 +1,179 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/formalization-decision.v1.json",
+  "title": "Vibe Mathing Lean Formalization Decision",
+  "description": "The Lean-specific projection of a FormalMethodDecision. It selects or blocks a Lean route but never constitutes a kernel receipt.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,255}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cost": {
+      "anyOf": [
+        {"type": "string", "minLength": 1},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["level", "description"],
+          "properties": {
+            "level": {"enum": ["negligible", "low", "medium", "high", "bounded", "unknown"]},
+            "description": {"type": "string", "minLength": 1},
+            "estimated_wall_seconds": {"type": "integer", "minimum": 0},
+            "estimated_memory_bytes": {"type": "integer", "minimum": 0},
+            "repair_budget": {"type": "integer", "minimum": 0}
+          }
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "formalization_decision_id",
+    "formal_method_decision_id",
+    "problem_id",
+    "classification",
+    "method",
+    "reason",
+    "reason_codes",
+    "capabilities",
+    "cost",
+    "risks",
+    "next_obligations",
+    "evidence_ceilings",
+    "lean",
+    "alternative_verification_path",
+    "blockers",
+    "owner",
+    "created_at",
+    "supersedes"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "formalization_decision_id": {"$ref": "#/$defs/identifier"},
+    "decision_id": {"$ref": "#/$defs/identifier"},
+    "formal_method_decision_id": {"$ref": "#/$defs/identifier"},
+    "problem_id": {"$ref": "#/$defs/identifier"},
+    "claim_id": {"$ref": "#/$defs/identifier"},
+    "obligation_id": {"$ref": "#/$defs/identifier"},
+    "problem_contract_sha256": {"$ref": "#/$defs/digest"},
+    "contract_sha256": {"$ref": "#/$defs/digest"},
+    "classification": {
+      "enum": ["required", "recommended", "not_applicable", "blocked"]
+    },
+    "decision": {
+      "enum": ["required", "recommended", "not_applicable", "blocked"]
+    },
+    "method": {"const": "lean"},
+    "reason": {"$ref": "#/$defs/text"},
+    "rationale": {"$ref": "#/$defs/text"},
+    "reason_codes": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "required_capabilities": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "cost": {"$ref": "#/$defs/cost"},
+    "risks": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "next_obligations": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "evidence_ceilings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "alternative_verification_path": {
+      "anyOf": [
+        {"type": "string", "minLength": 1},
+        {"type": "array", "minItems": 1},
+        {"type": "object"}
+      ]
+    },
+    "blockers": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "lean": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["language", "required"],
+      "properties": {
+        "language": {"const": "Lean4"},
+        "required": {"type": "boolean"},
+        "toolchain": {"type": "string", "minLength": 1},
+        "mathlib": {"type": "string", "minLength": 1},
+        "profile": {"type": "string", "minLength": 1}
+      }
+    },
+    "claim_type": {"type": "string", "minLength": 1},
+    "evidence_target": {"type": "string", "minLength": 1},
+    "owner": {"$ref": "#/$defs/text"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "supersedes": {"type": ["string", "null"], "minLength": 1},
+    "metadata": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "anyOf": [
+        {"required": ["problem_contract_sha256"]},
+        {"required": ["contract_sha256"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["claim_id"]},
+        {"required": ["obligation_id"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["capabilities"]},
+        {"required": ["required_capabilities"]}
+      ]
+    },
+    {
+      "if": {
+        "required": ["classification"],
+        "properties": {"classification": {"const": "blocked"}}
+      },
+      "then": {
+        "properties": {
+          "blockers": {"minItems": 1},
+          "next_obligations": {"minItems": 1}
+        }
+      }
+    }
+  ]
+}

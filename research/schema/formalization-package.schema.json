@@ -1,0 +1,334 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/formalization-package.v1.json",
+  "title": "Vibe Mathing Formalization Package",
+  "description": "A content-addressed, candidate-only Lean formalization package bound to one ProblemContract, Attempt, ObligationGraph, obligation and candidate.",
+  "type": "object",
+  "additionalProperties": false,
+  "$defs": {
+    "identifier": {
+      "type": "string",
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]{0,255}$"
+    },
+    "digest": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "locator": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\u0000]+$"
+    },
+    "digest_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["locator", "sha256"],
+      "properties": {
+        "locator": {"$ref": "#/$defs/locator"},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "media_type": {"type": "string", "minLength": 1}
+      }
+    },
+    "normalized": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["objects", "domain", "quantifiers", "assumptions", "conclusion"],
+      "properties": {
+        "objects": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "domain": {"$ref": "#/$defs/text"},
+        "quantifiers": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "anyOf": [
+              {"$ref": "#/$defs/text"},
+              {"type": "object"}
+            ]
+          }
+        },
+        "assumptions": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "conclusion": {"$ref": "#/$defs/text"}
+      }
+    },
+    "lean_statement": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declaration", "statement"],
+      "properties": {
+        "module": {"type": "string", "minLength": 1},
+        "declaration": {"$ref": "#/$defs/text"},
+        "statement": {"$ref": "#/$defs/text"},
+        "statement_sha256": {"$ref": "#/$defs/digest"}
+      }
+    },
+    "toolchain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lean_version", "lake_version", "mathlib_commit", "manifest_sha256", "fingerprint"],
+      "properties": {
+        "lean_version": {"$ref": "#/$defs/text"},
+        "lake_version": {"$ref": "#/$defs/text"},
+        "mathlib_commit": {"$ref": "#/$defs/text"},
+        "manifest_sha256": {"$ref": "#/$defs/digest"},
+        "fingerprint": {"$ref": "#/$defs/digest"},
+        "profile": {"$ref": "#/$defs/text"}
+      }
+    },
+    "budget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["timeout_seconds", "max_output_bytes", "max_memory_bytes", "max_cpu_seconds", "max_retries"],
+      "properties": {
+        "timeout_seconds": {"type": "integer", "minimum": 1},
+        "max_output_bytes": {"type": "integer", "minimum": 1},
+        "max_memory_bytes": {"type": "integer", "minimum": 1},
+        "max_cpu_seconds": {"type": "integer", "minimum": 1},
+        "max_retries": {"type": "integer", "minimum": 0},
+        "max_files": {"type": "integer", "minimum": 1}
+      }
+    },
+    "claim_ceiling": {
+      "anyOf": [
+        {"$ref": "#/$defs/text"},
+        {"type": "object"}
+      ]
+    },
+    "reuse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["declaration", "statement", "statement_sha256", "relation"],
+      "properties": {
+        "package": {"$ref": "#/$defs/text"},
+        "version": {"$ref": "#/$defs/text"},
+        "commit": {"$ref": "#/$defs/text"},
+        "declaration": {"$ref": "#/$defs/text"},
+        "full_name": {"$ref": "#/$defs/text"},
+        "imports": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/text"}
+        },
+        "statement": {"$ref": "#/$defs/text"},
+        "statement_sha256": {"$ref": "#/$defs/digest"},
+        "relation": {"enum": ["exact", "stronger", "weaker", "analogy", "unknown"]}
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "package_id",
+    "package_sha256",
+    "problem_id",
+    "attempt_id",
+    "graph_id",
+    "obligation_id",
+    "candidate_id",
+    "allowed_axioms",
+    "imports",
+    "symbol_map",
+    "reused_declarations",
+    "source_files",
+    "blueprint",
+    "unresolved_obligations",
+    "claim_ceiling",
+    "source_refs",
+    "created_at"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "package_id": {"$ref": "#/$defs/identifier"},
+    "package_sha256": {"$ref": "#/$defs/digest"},
+    "problem_id": {"$ref": "#/$defs/identifier"},
+    "attempt_id": {"$ref": "#/$defs/identifier"},
+    "graph_id": {"$ref": "#/$defs/identifier"},
+    "obligation_id": {"$ref": "#/$defs/identifier"},
+    "candidate_id": {"$ref": "#/$defs/identifier"},
+    "problem_contract_sha256": {"$ref": "#/$defs/digest"},
+    "contract_sha256": {"$ref": "#/$defs/digest"},
+    "attempt_sha256": {"$ref": "#/$defs/digest"},
+    "attempt_digest": {"$ref": "#/$defs/digest"},
+    "graph_sha256": {"$ref": "#/$defs/digest"},
+    "graph_digest": {"$ref": "#/$defs/digest"},
+    "obligation_sha256": {"$ref": "#/$defs/digest"},
+    "obligation_digest": {"$ref": "#/$defs/digest"},
+    "candidate_sha256": {"$ref": "#/$defs/digest"},
+    "candidate_digest": {"$ref": "#/$defs/digest"},
+    "obligation_statement_sha256": {"$ref": "#/$defs/digest"},
+    "source_claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "sha256"],
+      "properties": {
+        "text": {"$ref": "#/$defs/text"},
+        "sha256": {"$ref": "#/$defs/digest"},
+        "locator": {"$ref": "#/$defs/locator"}
+      }
+    },
+    "source_claim_text": {"$ref": "#/$defs/text"},
+    "source_claim_sha256": {"$ref": "#/$defs/digest"},
+    "source_claim_locator": {"$ref": "#/$defs/locator"},
+    "normalized_statement": {"$ref": "#/$defs/normalized"},
+    "normalized": {"$ref": "#/$defs/normalized"},
+    "lean": {"$ref": "#/$defs/lean_statement"},
+    "lean_declaration": {"$ref": "#/$defs/text"},
+    "lean_statement": {"$ref": "#/$defs/text"},
+    "lean_statement_sha256": {"$ref": "#/$defs/digest"},
+    "lean_module": {"type": "string", "minLength": 1},
+    "symbol_map": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "anyOf": [
+          {"type": "object"},
+          {"type": "array", "minItems": 2, "maxItems": 2}
+        ]
+      }
+    },
+    "allowed_axioms": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "imports": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/text"}
+    },
+    "toolchain": {"$ref": "#/$defs/toolchain"},
+    "lean_version": {"$ref": "#/$defs/text"},
+    "lake_version": {"$ref": "#/$defs/text"},
+    "mathlib_commit": {"$ref": "#/$defs/text"},
+    "manifest_sha256": {"$ref": "#/$defs/digest"},
+    "toolchain_fingerprint": {"$ref": "#/$defs/digest"},
+    "reused_declarations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/reuse"}
+    },
+    "proof_source": {"$ref": "#/$defs/digest_ref"},
+    "proof_source_locator": {"$ref": "#/$defs/locator"},
+    "proof_source_sha256": {"$ref": "#/$defs/digest"},
+    "source_files": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/digest_ref"}
+    },
+    "blueprint": {
+      "anyOf": [
+        {"type": "object"},
+        {"type": "string", "minLength": 1}
+      ]
+    },
+    "unresolved_obligations": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "anyOf": [
+          {"$ref": "#/$defs/identifier"},
+          {"type": "object"}
+        ]
+      }
+    },
+    "claim_ceiling": {"$ref": "#/$defs/claim_ceiling"},
+    "budgets": {"$ref": "#/$defs/budget"},
+    "budget": {"$ref": "#/$defs/budget"},
+    "source_refs": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "anyOf": [
+          {"$ref": "#/$defs/locator"},
+          {"$ref": "#/$defs/digest_ref"}
+        ]
+      }
+    },
+    "formalization_decision_id": {"$ref": "#/$defs/identifier"},
+    "generator": {"$ref": "#/$defs/identifier"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "metadata": {"type": "object"}
+  },
+  "allOf": [
+    {
+      "anyOf": [
+        {"required": ["problem_contract_sha256"]},
+        {"required": ["contract_sha256"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["attempt_sha256"]},
+        {"required": ["attempt_digest"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["graph_sha256"]},
+        {"required": ["graph_digest"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["obligation_sha256"]},
+        {"required": ["obligation_digest"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["candidate_sha256"]},
+        {"required": ["candidate_digest"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["source_claim"]},
+        {"required": ["source_claim_text", "source_claim_sha256"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["normalized_statement"]},
+        {"required": ["normalized"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["lean"]},
+        {"required": ["lean_declaration", "lean_statement"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["proof_source"]},
+        {"required": ["proof_source_locator", "proof_source_sha256"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["toolchain"]},
+        {"required": ["lean_version", "lake_version", "mathlib_commit", "manifest_sha256", "toolchain_fingerprint"]}
+      ]
+    },
+    {
+      "anyOf": [
+        {"required": ["budgets"]},
+        {"required": ["budget"]}
+      ]
+    }
+  ]
+}

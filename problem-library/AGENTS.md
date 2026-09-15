@@ -59,6 +59,10 @@ raw/erdosproblems/
 
 ProblemContract 准入必须执行 `governance/standards/MATHEMATICAL_REASONING_DISCIPLINE.md` 的定义先行规则：冻结对象、定义域、量词顺序、定义、前提、公理、目标、精确否定、尺度与极端边界，并登记来源差异和可能的语义重复。来源标题、状态、有限样本或模型概括不得替代 statement-faithfulness 审查；歧义未闭合时禁止进入研究准入。
 
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+
+进入形式化/证明/准入阶段前，Problem 必须绑定 formalization target/profile、trusted expected declaration 或精确 obstruction。来源中已有 Lean 文件只算 CandidateObservation/形式化候选，不能代替 canonical identity、faithfulness、fresh replay 或 Result gate。
+
 ## 边界与依赖
 
 - 上游：Wikipedia MediaWiki API、UnsolvedMath 公开目录分页/Hugging Face 固定 JSON 分发与 Erdős Problems 站点页面。

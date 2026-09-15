@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.8.0
+
+- proof lane 现在要求 verifier-side trusted challenge 与 Candidate source 分离，identity 由 Lean 类型检查而非字符串命中建立。
+- 明确 native `leanchecker --fresh` 是 same-domain replay；未审查 AI proof 必须等待 sandboxed Comparator 与 external checker route。
+- 本版源码为 `implementation_complete_validation_deferred`，未提升任何数学结论或 verifier 准入状态。
+
+## 0.7.0
+
+- proof lane 从规划开始维护 formalization target、定义映射和 expected declaration。
+- AI 生成 proof 的 terminal admission 新增 toolchain freshness 与 sandbox 外 proof replay 硬门。
+
+## 0.6.0
+
+- 继承 Verified Discovery Loop D04–D09；proof/refutation 默认隔离为 candidate 并绑定 root obligation。
+- 加入成立/反驳独立 typed evidence 晋升边界和冲突冻结规则。
+
 ## 0.5.0
 
 - 增加 reuse-first 定理门：固定 package/version/commit/declaration/import，并要求陈述比较、前提证明和双审计。

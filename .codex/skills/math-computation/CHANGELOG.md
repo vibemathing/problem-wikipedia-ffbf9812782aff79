@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.7.0
+
+- 继承 Verified Discovery Loop D05/D08；计算 receipt 固定输入、范围、工具链、预算与输出。
+- 强制 numeric/symbolic/native status 能力边界，不得替代一般证明或 Result 准入。
+
 ## 0.6.0
 
 - 接入数学知识 registry；OEIS/LMFDB/DLMF/SageMath 查询与执行受许可、预算、digest 和 candidate-only evidence ceiling 约束。

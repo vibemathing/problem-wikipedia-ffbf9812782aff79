@@ -19,6 +19,10 @@ from vibe_mathing.evidence import (
     load_verifier_registry,
     verify_evidence_receipt,
 )
+from vibe_mathing.formal_assurance import (
+    has_terminal_assurance,
+    has_terminal_trust_diversity,
+)
 from vibe_mathing.obligations import (
     ObligationError,
     obligation_result_gate,
@@ -115,13 +119,13 @@ def load_source_record_ids(project_root: Path = ROOT) -> set[str]:
     }
 
 
-def accepted_independent_capabilities(
+def _accepted_independent_evidence(
     result: dict[str, Any],
     generator: str,
     *,
     project_root: Path = ROOT,
     errors: list[str] | None = None,
-) -> set[str]:
+) -> list[tuple[dict[str, Any], str]]:
     validated: list[tuple[dict[str, Any], str]] = []
     for item in result.get("evidence", []):
         try:
@@ -147,26 +151,36 @@ def accepted_independent_capabilities(
             target = validated_by_id.get(evidence_id)
             if target is not None and target[1] == capability:
                 invalidated_ids.add(evidence_id)
-    return {
-        capability
+    return [
+        (item, capability)
         for item, capability in validated
         if item.get("verdict") == "accept"
         and item.get("independent") is True
         and item.get("evidence_id") not in invalidated_ids
+    ]
+
+
+def accepted_independent_capabilities(
+    result: dict[str, Any],
+    generator: str,
+    *,
+    project_root: Path = ROOT,
+    errors: list[str] | None = None,
+) -> set[str]:
+    return {
+        capability
+        for _, capability in _accepted_independent_evidence(
+            result,
+            generator,
+            project_root=project_root,
+            errors=errors,
+        )
     }
 
 
 def has_direct_solution_evidence(kind: str, capabilities: set[str]) -> bool:
-    if kind == "proof":
-        return "human_review" in capabilities or {
-            "kernel_check",
-            "axiom_escape_audit",
-        }.issubset(capabilities)
-    if kind == "counterexample":
-        return bool(
-            capabilities.intersection({"counterexample_check", "human_review"})
-        ) or {"kernel_check", "axiom_escape_audit"}.issubset(capabilities)
-    return False
+    """Require the shared typed terminal profile; human review is never a kernel substitute."""
+    return has_terminal_assurance(kind, capabilities)
 
 
 def qualifies_as_solution(
@@ -176,6 +190,12 @@ def qualifies_as_solution(
     project_root: Path = ROOT,
     errors: list[str] | None = None,
 ) -> bool:
+    # Withdrawal is the append-only disposition for a historical Result whose
+    # Candidate/Evidence lineage is no longer current.  It must remain
+    # inspectable in history, but must not be forced through a now-open root
+    # closure or re-enter any derived solution view.
+    if result.get("outcome") == "withdrawn":
+        return False
     kind = result.get("kind")
     if kind not in SOLUTION_KINDS:
         return False
@@ -185,9 +205,16 @@ def qualifies_as_solution(
     generator = attempt.get("generator")
     if not isinstance(generator, str) or not generator:
         return False
-    capabilities = accepted_independent_capabilities(
+    accepted_evidence = _accepted_independent_evidence(
         result, generator, project_root=project_root, errors=errors
     )
+    capabilities = {capability for _, capability in accepted_evidence}
+    registry = load_verifier_registry(project_root)
+    capability_domains: dict[str, set[str]] = {}
+    for item, capability in accepted_evidence:
+        principal = registry.get(item.get("verifier"))
+        if principal is not None:
+            capability_domains.setdefault(capability, set()).add(principal["trust_domain"])
     try:
         obligation_gate = obligation_result_gate(project_root, result, attempt)
     except ObligationError as exc:
@@ -195,9 +222,12 @@ def qualifies_as_solution(
             errors.append(f"{result.get('result_id')}: Obligation closure gate：{exc}")
         return False
     capabilities.update(obligation_gate["capabilities"])
+    for capability, domains in obligation_gate["capability_domains"].items():
+        capability_domains.setdefault(capability, set()).update(domains)
     return (
         has_direct_solution_evidence(kind, capabilities)
         and "statement_faithfulness" in capabilities
+        and has_terminal_trust_diversity(kind, capability_domains)
     )
 
 
@@ -345,7 +375,7 @@ def validate_cross_references(
             )
         if outcome in {"established", "refuted"} and not qualified:
             errors.append(
-                f"{result_id}: outcome={outcome} 缺少独立直接验证、适用的 axiom/escape audit 或 statement faithfulness 证据"
+                f"{result_id}: outcome={outcome} 缺少 typed terminal profile 要求的独立有效能力、root closure 或无冲突条件"
             )
         if kind in NON_CLOSING_KINDS and outcome in {"established", "refuted"}:
             errors.append(f"{result_id}: {kind} 不能成为原问题的完整结论")
@@ -389,6 +419,8 @@ def main() -> int:
         ROOT / "research" / "schema" / "candidate-artifact.schema.json",
         ROOT / "research" / "schema" / "evidence-link.schema.json",
         ROOT / "research" / "schema" / "semantic-review.schema.json",
+        ROOT / "research" / "schema" / "lean-obligation-request.schema.json",
+        ROOT / "research" / "schema" / "lean-external-replay-receipt.schema.json",
     ]
     missing = [path.relative_to(ROOT) for path in required_paths if not path.is_file()]
     if missing:
@@ -400,6 +432,13 @@ def main() -> int:
     try:
         load_verifier_registry(ROOT)
         Draft202012Validator.check_schema(load_json(RECEIPT_SCHEMA_PATH))
+        for name in (
+            "lean-obligation-request.schema.json",
+            "lean-external-replay-receipt.schema.json",
+        ):
+            Draft202012Validator.check_schema(
+                load_json(ROOT / "research" / "schema" / name)
+            )
         problems, problem_ids = validate_records(
             PROBLEMS_PATH, PROBLEM_SCHEMA_PATH, "problem_id", errors
         )

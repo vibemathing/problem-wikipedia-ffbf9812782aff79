@@ -3,37 +3,37 @@
   "skills": [
     {
       "entry": ".codex/skills/math-computation/SKILL.md",
-      "entry_sha256": "80c447221725ec198bee4b104d43ca28425110a7dac17afa9cad56ec69b57f48",
+      "entry_sha256": "7a4127ce27adc9929a3734774a41d7a91c283ca1d1d779ab894e56cac94efbe4",
       "skill_id": "math-computation",
-      "version": "0.6.0",
+      "version": "0.7.0",
       "web_status": "constrained"
     },
     {
       "entry": ".codex/skills/math-derivation/SKILL.md",
-      "entry_sha256": "3f3b567729f1e5dd24f87e832fdac702577f4add14b8cf6be12d538e1fe787c1",
+      "entry_sha256": "0373b44afd941250fbb09fb305ca29dfa2cf40b1398cfbbd3bcbd4587316c302",
       "skill_id": "math-derivation",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "web_status": "active"
     },
     {
       "entry": ".codex/skills/math-discovery/SKILL.md",
-      "entry_sha256": "ceb54d773cd970ca42d0243fb1a39b109cab3ffdbe2dd87b98b43539f988d471",
+      "entry_sha256": "b2ab9fc56b0b227bc42e62346ea112d5fd3ae17c3d4822779c3ccb53e580354e",
       "skill_id": "math-discovery",
-      "version": "0.4.0",
+      "version": "0.5.0",
       "web_status": "active"
     },
     {
       "entry": ".codex/skills/math-formalization/SKILL.md",
-      "entry_sha256": "8ade921dacd277f425f424064a6002806c057f160555081dbdb4ec05c1f5ea05",
+      "entry_sha256": "d206425b677e72e4037da7da02bdb3ce00064c6c10f6c60b0cf3527440b626be",
       "skill_id": "math-formalization",
-      "version": "0.5.0",
+      "version": "0.8.0",
       "web_status": "constrained"
     },
     {
       "entry": ".codex/skills/math-proof/SKILL.md",
-      "entry_sha256": "61006c732ad69e73f56be126acb6fa9e25c866e18733ce1f0f3863c1f8eea80f",
+      "entry_sha256": "0955a202eb5631b44501c57624f62fa93a5e24e863d245f3e5122b2d3a45727a",
       "skill_id": "math-proof",
-      "version": "0.5.0",
+      "version": "0.8.0",
       "web_status": "active"
     },
     {
@@ -59,9 +59,9 @@
     },
     {
       "entry": ".codex/skills/vibe-mathing-router/SKILL.md",
-      "entry_sha256": "4eeaf34d99f7fd5b357a9ea7b255df45bcbc26d052f2e31e015741ac40c0778c",
+      "entry_sha256": "d343497990616b438defb572e233a1585b1ef17d0e3a512e0740f14e4e03ce97",
       "skill_id": "vibe-mathing-router",
-      "version": "0.5.0",
+      "version": "0.7.0",
       "web_status": "active"
     }
   ]

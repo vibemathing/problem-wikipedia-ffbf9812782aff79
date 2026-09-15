@@ -1,6 +1,8 @@
 # Web GPT T1–T9 Coordinator Bootstrap
 
-This file defines the link-first bootstrap for one ChatGPT Project that coordinates one mathematical problem. It is a planning and monitoring role, not a tenth mathematical lane and not an Evidence/Result authority.
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+
+This file defines the link-first bootstrap for one ChatGPT Project that coordinates one mathematical problem. PLFB remains the sole conceptual metamodel root; this role only projects one frozen ProblemContract into nine Candidate lanes and never creates a second truth source. It is a planning and monitoring role, not a tenth mathematical lane and not an Evidence/Result authority.
 
 ## Minimal user invocation
 
@@ -35,18 +37,20 @@ Read in this order:
 
 1. `AGENTS.md`;
 2. `WEB_BOOTSTRAP.md`;
-3. `WEB_CHANNEL_PROFILE.json`;
-4. `HARNESS_SNAPSHOT.json`;
-5. `WEB_CONTEXT_BUNDLE.md`;
-6. `WEB_ACTIVE_SKILLS.json`;
-7. `problem-library/records/canonical-problems.jsonl`;
-8. `research/records/failed-routes.jsonl`;
-9. `research/records/attempts.jsonl`;
-10. `research/records/obligation-graphs.jsonl`;
-11. `.codex/skills/outcome-space-search/SKILL.md`;
-12. `.codex/skills/outcome-space-search/references/web-gpt-parallel-tree.md`;
-13. `.codex/skills/outcome-space-search/references/web-gpt-parallel-tree.v1.json`;
-14. `WEB_OUTPUT_CONTRACT.json`.
+3. `governance/control-plane/formal-verification-infrastructure.v1.json`;
+4. `governance/control-plane/lean-toolchain-lock.v1.json`;
+5. `WEB_CHANNEL_PROFILE.json`;
+6. `HARNESS_SNAPSHOT.json`;
+7. `WEB_CONTEXT_BUNDLE.md`;
+8. `WEB_ACTIVE_SKILLS.json`;
+9. `problem-library/records/canonical-problems.jsonl`;
+10. `research/records/failed-routes.jsonl`;
+11. `research/records/attempts.jsonl`;
+12. `research/records/obligation-graphs.jsonl`;
+13. `.codex/skills/outcome-space-search/SKILL.md`;
+14. `.codex/skills/outcome-space-search/references/web-gpt-parallel-tree.md`;
+15. `.codex/skills/outcome-space-search/references/web-gpt-parallel-tree.v1.json`;
+16. `WEB_OUTPUT_CONTRACT.json`.
 
 Then freeze and report:
 
@@ -115,13 +119,22 @@ bounded requested budget and observable stop condition
 pre-admitted unique attempt_id, route_id, graph_id and obligation_id
 pre-admitted unique web/attempt-* branch
 pre-admitted unique candidate artifact path
+formalization target/profile and frozen formal declaration, or precise obstruction
+verifier-side trusted challenge locator + SHA-256, never Candidate-supplied
+Candidate declaration + SHA-256 and pre/post input-digest stability requirement
+execution_profile=trusted_fixture_native plus registry/allowlist binding, or precise refusal
+typed statement-identity request + independent semantic-faithfulness reviewer request
+same-domain native fresh replay versus different-domain sandbox-external replay
+fixed external checker/exporter/runner/config identities for any proof-terminal request
 required terminal handoff
 candidate-only and no-root-propagation non-claims
 ```
 
 No two prompts may own the same branch, Attempt, Route, Obligation or writable artifact path. A tool can be selected inside a lane, but tool choice cannot redefine the T1–T9 result class.
 
-Each prompt must start by requiring the worker to reread `AGENTS.md` and `WEB_BOOTSTRAP.md`, validate the frozen binding against fresh state, and return `BLOCK` on drift. It must prohibit direct default-branch writes, protected-path writes, hidden-reasoning requests and fabricated execution receipts.
+Each prompt must start by requiring the worker to reread `AGENTS.md` and `WEB_BOOTSTRAP.md`, validate the frozen binding against fresh state, and return `BLOCK` on drift. It must prohibit direct default-branch writes, protected-path writes, hidden-reasoning requests and fabricated execution receipts. It must state that Web workers may submit formalization candidates but cannot sign kernel, axiom, identity, faithfulness, freshness, replay or Result capabilities.
+
+Treat unreviewed AI Lean source as potentially malicious. Candidate source must not define, replace or share source with the verifier-side trusted challenge. Statement identity must be established by a trusted typed probe in which the Candidate theorem inhabits the frozen trusted proposition; string, name or text matching has no admission power. Non-sandbox native requests are allowed only for registry-authorized `trusted_fixture_native` input whose challenge digest is allowlisted. Native `leanchecker --fresh` remains in the `lean-kernel` trust domain and cannot sign `proof_replay_check`. A proof-terminal request must keep `kernel_check`, `axiom_escape_audit`, `statement_identity`, independent `statement_faithfulness`, `toolchain_freshness` and sandbox-external `proof_replay_check` distinct, bind fixed checker/exporter/runner/config digests, require verifier/trust-domain diversity, fresh receipts, root closure and no proof/counterexample conflict. Typed counterexamples use `counterexample_check + statement_identity + statement_faithfulness` without invented universal Lean prerequisites. Missing tools, timeout, stale/digest drift, unqualified routes or failed checks yield only `blocked/undetermined`.
 
 ## Worker terminal handoff
 
@@ -167,4 +180,4 @@ The coordinator may produce a status matrix across T1–T9 and candidate typed r
 - select a preferred side when proof and counterexample candidates conflict;
 - create or admit Evidence, Result or Solution.
 
-Only independent verifier receipts, statement-faithfulness review and the repository admission gates can change those states.
+Only fresh independent verifier receipts, an independent statement-faithfulness review and the repository admission gates can change those states. Kernel acceptance, `leanchecker --fresh`, Issue/PR/CI/merge state, generator self-review, or the name Comparator/nanoda/external-checker alone cannot.

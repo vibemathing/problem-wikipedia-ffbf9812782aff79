@@ -232,6 +232,13 @@ def validate_packet(root: Path, packet_path: Path) -> tuple[dict[str, Any] | Non
     if packet.get("problem_contract_sha256") != contract_digest:
         errors.append("packet ProblemContract digest mismatch")
     try:
+        snapshot_digest = snapshot_file_sha256(root)
+    except ValueError as exc:
+        errors.append(str(exc))
+        snapshot_digest = None
+    if snapshot_digest and packet.get("harness_snapshot_sha256") != snapshot_digest:
+        errors.append("packet Harness snapshot digest mismatch")
+    try:
         snapshot_bindings = snapshot_history_bindings(root)
     except (OSError, ValueError, json.JSONDecodeError) as exc:
         errors.append(str(exc))
@@ -245,6 +252,8 @@ def validate_packet(root: Path, packet_path: Path) -> tuple[dict[str, Any] | Non
     importer_path = root / "scripts/import_web_attempt.py"
     if not importer_path.is_file() or importer_path.is_symlink():
         errors.append("trusted importer policy is missing or unsafe")
+    elif packet.get("importer_policy_sha256") != sha256_file(importer_path):
+        errors.append("packet trusted importer policy digest mismatch")
 
     attempts = {record.get("attempt_id"): record for record in load_jsonl(root / "research/records/attempts.jsonl")}
     attempt = attempts.get(packet.get("attempt_id"))
@@ -337,12 +346,58 @@ def validate_packet(root: Path, packet_path: Path) -> tuple[dict[str, Any] | Non
         statement_digest = obligation.get("statement_sha256")
         if not HEX64.fullmatch(str(statement_digest or "")):
             errors.append("active obligation has invalid statement digest")
+        elif canonical_json_sha256(obligation.get("statement")) != statement_digest:
+            errors.append("active obligation statement digest mismatch")
         allowed_capabilities = set(obligation.get("acceptance", {}).get("required_capabilities", []))
         requested_capabilities = set(packet.get("requested_verification", []))
         if not requested_capabilities.issubset(allowed_capabilities):
             errors.append("packet requests capabilities outside obligation acceptance")
 
     return packet, errors
+
+
+ADMISSION_PENDING_PREFIXES = (
+    "packet attempt_id is not pre-admitted",
+    "packet graph_id does not exist",
+    "packet obligation_id does not exist in graph",
+)
+
+
+def admission_pending(root: Path, packet: dict[str, Any] | None, errors: list[str]) -> bool:
+    """部分准入判定（GATE-CUT-LOG Batch 8）：records 缺预准入时，若 packet 声明
+    admission_request 且与仓内真实 ProblemContract digest 一致，则以 pending 放行 inbox
+    校验。不产生任何证据/结果；records 仍禁写；trusted 补录 Attempt 后自然闭环。"""
+    if packet is None or not errors:
+        return False
+    for error in errors:
+        if not error.startswith(ADMISSION_PENDING_PREFIXES):
+            return False
+    request = packet.get("admission_request")
+    if not isinstance(request, dict):
+        return False
+    required = ("request_id", "graph_id", "obligation_id", "route_id", "attempt_id", "problem_contract_sha256")
+    if not all(isinstance(request.get(key), str) and request[key] for key in required):
+        return False
+    if request["graph_id"] != packet.get("graph_id"):
+        return False
+    if request["obligation_id"] != packet.get("obligation_id"):
+        return False
+    if request["route_id"] != packet.get("route_id"):
+        return False
+    if request["attempt_id"] != packet.get("attempt_id"):
+        return False
+    if not re.fullmatch(r"[A-Za-z0-9._:-]{3,120}", request["request_id"]):
+        return False
+    try:
+        problem = load_problem(root)
+    except (OSError, ValueError, json.JSONDecodeError):
+        return False
+    if request["problem_contract_sha256"] != canonical_json_sha256(problem):
+        return False
+    failed_routes = {record.get("route_id") for record in load_jsonl(root / "research/records/failed-routes.jsonl")}
+    if packet.get("route_id") in failed_routes:
+        return False
+    return True
 
 
 def packet_files(root: Path) -> list[Path]:

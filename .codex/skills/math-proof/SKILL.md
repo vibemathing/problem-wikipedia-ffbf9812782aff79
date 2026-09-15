@@ -76,3 +76,10 @@ Route status：open / blocked / refuted / closed，与 Claim status 分开记录
 - Sources：`local-proof-writer`、`annals-of-mathematics-skills`、`kdense-scientific-skills`、`proofflow`、`leanprover-skills`；上游图与 Skill 只作方法/反例来源。
 - Last updated：2026-09-05。
 - Verification：项目结构校验；数学正确性需要人工或 proof assistant 证据。
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+继承 `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md` 的 D04–D09：自然语言 proof/refutation 永远先作为 candidate，须绑定 root obligation；成立与反驳分别满足独立、typed、statement-faithful 的晋升矩阵，冲突时冻结而非择一闭合。
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+继承 `governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md`。proof lane 从规划开始就必须维护 formalization target、定义映射和 verifier 侧 trusted challenge；Candidate theorem 必须经 Lean 类型检查 inhabit 可信命题，字符串命中不算 identity。native `leanchecker --fresh` 仍属于 Lean kernel 域；AI 生成 proof 要进入 `established`，还必须补齐 toolchain freshness 与 sandbox 外 `proof_replay_check`。自然语言或 human review 不替代这些能力。
+- Last updated：2026-09-09。
+- Implementation status：trusted-challenge proof boundary 已进入源码，但新增 Lean 路径按操作者要求保持 `qualification_pending`。
+- Verification：项目结构校验；数学正确性需要人工语义审查、native evidence 与独立 external proof replay。

@@ -1,0 +1,117 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/statement-faithfulness-receipt.v1.json",
+  "title": "Vibe Mathing Statement Faithfulness Receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "receipt_id",
+    "receipt_type",
+    "subject",
+    "original_statement_sha256",
+    "formal_statement_sha256",
+    "statement_sha256",
+    "problem_contract_sha256",
+    "comparisons",
+    "verdict",
+    "reasons",
+    "reviewer",
+    "reviewed_at",
+    "capability_boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "1.0.0"},
+    "receipt_id": {"type": "string", "pattern": "^faithfulness:[a-z0-9][a-z0-9.-]*$"},
+    "receipt_type": {"const": "statement_faithfulness"},
+    "subject": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "problem_id": {"type": ["string", "null"]},
+        "attempt_id": {"type": ["string", "null"]},
+        "candidate_id": {"type": ["string", "null"]},
+        "obligation_id": {"type": ["string", "null"]},
+        "problem_contract_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "statement_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "formal_statement_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "original_statement_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "formal_statement_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "statement_sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "problem_contract_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+    "component_digests": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "objects": {"$ref": "#/$defs/digest_pair"},
+        "domain": {"$ref": "#/$defs/digest_pair"},
+        "quantifiers": {"$ref": "#/$defs/digest_pair"},
+        "definitions": {"$ref": "#/$defs/digest_pair"},
+        "assumptions": {"$ref": "#/$defs/digest_pair"},
+        "conclusion": {"$ref": "#/$defs/digest_pair"},
+        "conclusion_strength": {"$ref": "#/$defs/digest_pair"},
+        "boundary_cases": {"$ref": "#/$defs/digest_pair"},
+        "source_identity": {"$ref": "#/$defs/digest_pair"}
+      }
+    },
+    "comparisons": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "objects",
+        "domain",
+        "quantifiers",
+        "definitions",
+        "assumptions",
+        "conclusion",
+        "conclusion_strength",
+        "boundary_cases",
+        "source_identity"
+      ],
+      "properties": {
+        "objects": {"$ref": "#/$defs/comparison"},
+        "domain": {"$ref": "#/$defs/comparison"},
+        "quantifiers": {"$ref": "#/$defs/comparison"},
+        "definitions": {"$ref": "#/$defs/comparison"},
+        "assumptions": {"$ref": "#/$defs/comparison"},
+        "conclusion": {"$ref": "#/$defs/comparison"},
+        "conclusion_strength": {"$ref": "#/$defs/comparison"},
+        "boundary_cases": {"$ref": "#/$defs/comparison"},
+        "source_identity": {"$ref": "#/$defs/comparison"}
+      }
+    },
+    "verdict": {"enum": ["pass", "fail", "needs_review"]},
+    "reasons": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "reviewer": {"type": "string", "minLength": 1},
+    "reviewed_at": {"type": "string", "format": "date-time"},
+    "capability_boundary": {"type": "string", "minLength": 1}
+  },
+  "$defs": {
+    "digest_pair": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["original", "formal"],
+      "properties": {
+        "original": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "formal": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"}
+      }
+    },
+    "comparison": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "original_sha256", "formal_sha256", "reason"],
+      "properties": {
+        "status": {"enum": ["pass", "fail", "needs_review"]},
+        "original_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "formal_sha256": {"type": ["string", "null"], "pattern": "^[a-f0-9]{64}$"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    }
+  }
+}

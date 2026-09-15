@@ -1,0 +1,53 @@
+{
+  "schema_version": "lean-toolchain-lock.v1",
+  "as_of": "2026-09-09",
+  "lean": {
+    "toolchain": "leanprover/lean4:v4.33.1",
+    "release": "v4.33.1",
+    "commit": "819816b2e0a3bf405af45ae5c7af2491d8f5bee6",
+    "version_fragment": "version 4.33.1",
+    "release_url": "https://github.com/leanprover/lean4/releases/tag/v4.33.1"
+  },
+  "mathlib": {
+    "tag": "v4.33.1",
+    "commit": "0df444a360eaa60ab8c11dca51a86af692955474",
+    "repository_url": "https://github.com/leanprover-community/mathlib4"
+  },
+  "fixture": {
+    "root": "fixtures/lean-proof",
+    "toolchain_file": "fixtures/lean-proof/lean-toolchain",
+    "lakefile": "fixtures/lean-proof/lakefile.toml",
+    "manifest": "fixtures/lean-proof/lake-manifest.json",
+    "declaration": "theorem two_add_two : (2 : ℕ) + 2 = 4",
+    "axiom_audit": "#print axioms VibeMathingFixture.two_add_two",
+    "trusted_challenge_file": "fixtures/lean-proof/VibeMathingFixture/TrustedChallenge.lean",
+    "trusted_challenge_module": "VibeMathingFixture.TrustedChallenge",
+    "trusted_statement_constant": "VibeMathingTrustedChallenge.statement",
+    "trusted_challenge_sha256": "10c90e78be67a7d68d01a0c0af7a8dc5ed19ebed98134ad4083e3d5651d62d6d",
+    "statement_identity_probe": "fixtures/lean-proof/VibeMathingFixture/StatementIdentity.lean"
+  },
+  "native_rechecker": {
+    "command": "leanchecker",
+    "reference_manual_name": "lean4checker",
+    "fresh_flag": "--fresh",
+    "trust_domain": "lean-kernel"
+  },
+  "qualification": {
+    "native_kernel_route": "qualified",
+    "adversarial_high_assurance_route": "blocked",
+    "evidence_ceiling": "supported"
+  },
+  "invalidation": {
+    "supersedes": ["leanprover/lean4:v4.33.0"],
+    "trigger": "Lean v4.33.1 fixes the known kernel/runtime soundness issues reported by the 2026-08-24 official bug-hunt postmortem; v4.33.0 high-assurance receipts remain stale.",
+    "required_actions": [
+      "migrate_exact_lean_mathlib_pair",
+      "rebuild_fixture_from_lock",
+      "run_native_kernel_and_axiom_replay",
+      "calibrate_trusted_challenge_identity_and_native_fresh_replay",
+      "requalify_native_route_after_human_review",
+      "replay_or_invalidate_descendant_receipts",
+      "qualify_sandboxed_comparator_and_external_checker_before_terminal_proof_admission"
+    ]
+  }
+}

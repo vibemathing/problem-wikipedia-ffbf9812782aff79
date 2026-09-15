@@ -11,6 +11,7 @@ import subprocess
 import time
 import fcntl
 import resource
+import threading
 from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
@@ -153,14 +154,75 @@ def run_path(project_root: Path, run_id: str) -> Path:
     return project_root / "research" / "runs" / safe_id / "run.json"
 
 
+_LOCK_REGISTRY_GUARD = threading.Lock()
+_LOCK_GUARDS: dict[str, Any] = {}
+_LOCK_LOCAL = threading.local()
+_LOCK_PROCESS_ID = os.getpid()
+
+
+def _reset_lock_state_after_fork() -> None:
+    """丢弃父进程的线程锁视图；文件锁仍由继承的 fd/父进程负责。"""
+    global _LOCK_REGISTRY_GUARD, _LOCK_GUARDS, _LOCK_LOCAL, _LOCK_PROCESS_ID
+    _LOCK_REGISTRY_GUARD = threading.Lock()
+    _LOCK_GUARDS = {}
+    _LOCK_LOCAL = threading.local()
+    _LOCK_PROCESS_ID = os.getpid()
+
+
+if hasattr(os, "register_at_fork"):
+    os.register_at_fork(after_in_child=_reset_lock_state_after_fork)
+
+
+def _lock_guard(key: str) -> Any:
+    global _LOCK_PROCESS_ID
+    if os.getpid() != _LOCK_PROCESS_ID:
+        _reset_lock_state_after_fork()
+    with _LOCK_REGISTRY_GUARD:
+        return _LOCK_GUARDS.setdefault(key, threading.RLock())
+
+
+def _held_locks() -> dict[str, list[Any]]:
+    held = getattr(_LOCK_LOCAL, "held", None)
+    if held is None:
+        held = {}
+        _LOCK_LOCAL.held = held
+    return held
+
+
 @contextmanager
 def locked_run(project_root: Path, run_id: str) -> Any:
-    """序列化同一 run 的所有副作用，避免并发状态与 artifact 竞争。"""
-    path = run_path(project_root, run_id).with_name("run.lock")
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+    """跨进程互斥，并允许同一线程安全嵌套同一 run。"""
+    lock_path = run_path(project_root, run_id).with_name("run.lock").resolve()
+    lock_path.parent.mkdir(parents=True, exist_ok=True)
+    key = str(lock_path)
+    guard = _lock_guard(key)
+    guard.acquire()
+    held = _held_locks()
+    entry = held.get(key)
+    try:
+        if entry is None:
+            handle = lock_path.open("a+b")
+            try:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            except BaseException:
+                handle.close()
+                raise
+            held[key] = [handle, 1]
+        else:
+            entry[1] += 1
         yield
+    finally:
+        entry = held.get(key)
+        if entry is not None:
+            if entry[1] == 1:
+                del held[key]
+                try:
+                    fcntl.flock(entry[0].fileno(), fcntl.LOCK_UN)
+                finally:
+                    entry[0].close()
+            else:
+                entry[1] -= 1
+        guard.release()
 
 
 def _write_atomic(path: Path, payload: dict[str, Any]) -> None:
@@ -187,28 +249,29 @@ def create_run(
 ) -> dict[str, Any]:
     run_id = stable_run_id(problem_id, adapter)
     path = run_path(project_root, run_id)
-    if path.is_file():
-        return load_run(project_root, run_id)
-    effective = {**DEFAULT_BUDGETS, **(budgets or {})}
-    if any(not isinstance(value, int) or value <= 0 for value in effective.values()):
-        raise RuntimeErrorBase("所有运行预算必须是正整数")
-    created = now()
-    state = {
-        "schema_version": "1.0.0",
-        "run_id": run_id,
-        "problem_id": problem_id,
-        "adapter": adapter,
-        "status": "planned",
-        "transition_count": 0,
-        "retry_count": 0,
-        "budgets": effective,
-        "checkpoints": [{"status": "planned", "at": created}],
-        "last_error": None,
-        "created_at": created,
-        "updated_at": created,
-    }
-    _write_atomic(path, state)
-    return state
+    with locked_run(project_root, run_id):
+        if path.is_file():
+            return load_run(project_root, run_id)
+        effective = {**DEFAULT_BUDGETS, **(budgets or {})}
+        if any(not isinstance(value, int) or value <= 0 for value in effective.values()):
+            raise RuntimeErrorBase("所有运行预算必须是正整数")
+        created = now()
+        state = {
+            "schema_version": "1.0.0",
+            "run_id": run_id,
+            "problem_id": problem_id,
+            "adapter": adapter,
+            "status": "planned",
+            "transition_count": 0,
+            "retry_count": 0,
+            "budgets": effective,
+            "checkpoints": [{"status": "planned", "at": created}],
+            "last_error": None,
+            "created_at": created,
+            "updated_at": created,
+        }
+        _write_atomic(path, state)
+        return state
 
 
 def load_run(project_root: Path, run_id: str) -> dict[str, Any]:
@@ -223,17 +286,31 @@ def load_run(project_root: Path, run_id: str) -> dict[str, Any]:
     return state
 
 
+def _state_run_id(state: dict[str, Any]) -> str:
+    if not isinstance(state, dict) or not isinstance(state.get("run_id"), str):
+        raise RuntimeErrorBase("运行状态缺少有效 run_id")
+    return state["run_id"]
+
+
 def transition(project_root: Path, state: dict[str, Any], target: str) -> dict[str, Any]:
-    current = state.get("status")
-    if current in TERMINAL_STATES or target not in TRANSITIONS.get(current, set()):
-        raise RuntimeErrorBase(f"非法运行状态转换：{current} -> {target}")
-    count = state["transition_count"] + 1
-    if count > state["budgets"]["max_transitions"]:
-        raise RuntimeErrorBase("运行转换预算耗尽")
-    changed = {**state, "status": target, "transition_count": count, "updated_at": now()}
-    changed["checkpoints"] = [*state["checkpoints"], {"status": target, "at": changed["updated_at"]}]
-    _write_atomic(run_path(project_root, state["run_id"]), changed)
-    return changed
+    run_id = _state_run_id(state)
+    with locked_run(project_root, run_id):
+        latest = load_run(project_root, run_id)
+        if latest != state:
+            raise RuntimeErrorBase("运行状态冲突：调用方状态已过期")
+        current = latest["status"]
+        if current in TERMINAL_STATES or target not in TRANSITIONS.get(current, set()):
+            raise RuntimeErrorBase(f"非法运行状态转换：{current} -> {target}")
+        count = latest["transition_count"] + 1
+        if count > latest["budgets"]["max_transitions"]:
+            raise RuntimeErrorBase("运行转换预算耗尽")
+        changed = {**latest, "status": target, "transition_count": count, "updated_at": now()}
+        changed["checkpoints"] = [
+            *latest["checkpoints"],
+            {"status": target, "at": changed["updated_at"]},
+        ]
+        _write_atomic(run_path(project_root, run_id), changed)
+        return changed
 
 
 def execute_bounded(
@@ -361,12 +438,20 @@ def execute_bounded(
 
 
 def record_retry(project_root: Path, state: dict[str, Any], error: str) -> dict[str, Any]:
-    retries = state["retry_count"] + 1
-    if retries > state["budgets"]["max_retries"]:
-        raise RuntimeErrorBase("运行重试预算耗尽")
-    changed = {**state, "retry_count": retries, "last_error": error, "updated_at": now()}
-    _write_atomic(run_path(project_root, state["run_id"]), changed)
-    return changed
+    run_id = _state_run_id(state)
+    with locked_run(project_root, run_id):
+        latest = load_run(project_root, run_id)
+        retries = latest["retry_count"] + 1
+        if retries > latest["budgets"]["max_retries"]:
+            raise RuntimeErrorBase("运行重试预算耗尽")
+        changed = {
+            **latest,
+            "retry_count": retries,
+            "last_error": error,
+            "updated_at": now(),
+        }
+        _write_atomic(run_path(project_root, run_id), changed)
+        return changed
 
 
 def cancel_run(project_root: Path, run_id: str) -> dict[str, Any]:

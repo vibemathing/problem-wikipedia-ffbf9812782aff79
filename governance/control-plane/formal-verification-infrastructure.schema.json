@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/formal-verification-infrastructure.schema.json",
+  "title": "VibeMathing Formal Verification Infrastructure Policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "policy_id",
+    "conceptual_root",
+    "foundation_policy",
+    "normative_standard_path",
+    "decision",
+    "assurance_profiles",
+    "terminal_paths",
+    "lifecycle",
+    "goal_distribution",
+    "required_surfaces"
+  ],
+  "properties": {
+    "schema_version": {"const": "formal-verification-infrastructure.v1"},
+    "policy_id": {"const": "FORMAL_VERIFICATION_INFRASTRUCTURE_V1"},
+    "conceptual_root": {"const": "PLFB"},
+    "foundation_policy": {"const": "VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1"},
+    "normative_standard_path": {"type": "string", "minLength": 1},
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "formal_verification_role",
+        "lean_role",
+        "universal_formalization_readiness_required",
+        "universal_lean_execution_required",
+        "alternate_proof_assistant_policy"
+      ],
+      "properties": {
+        "formal_verification_role": {"const": "mandatory_cross_face_infrastructure"},
+        "lean_role": {"const": "default_reference_kernel_and_required_compatibility_lane"},
+        "universal_formalization_readiness_required": {"const": true},
+        "universal_lean_execution_required": {"const": false},
+        "alternate_proof_assistant_policy": {"const": "allowed_only_after_equivalent_typed_verifier_admission"}
+      }
+    },
+    "assurance_profiles": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["candidate_formalization", "native_kernel", "adversarial_high_assurance"],
+      "properties": {
+        "candidate_formalization": {"$ref": "#/$defs/profile"},
+        "native_kernel": {"$ref": "#/$defs/profile"},
+        "adversarial_high_assurance": {"$ref": "#/$defs/profile"}
+      }
+    },
+    "terminal_paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["established_proof", "refuted_counterexample"],
+      "properties": {
+        "established_proof": {"$ref": "#/$defs/terminalPath"},
+        "refuted_counterexample": {"$ref": "#/$defs/terminalPath"}
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["advisory_invalidates_freshness", "version_change_requires_replay", "conflict_policy", "missing_runtime_semantics"],
+      "properties": {
+        "advisory_invalidates_freshness": {"const": true},
+        "version_change_requires_replay": {"const": true},
+        "conflict_policy": {"const": "freeze"},
+        "missing_runtime_semantics": {"const": "blocked_not_refuted"}
+      }
+    },
+    "goal_distribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "canonical_main_goal_files_mutable",
+        "protected_path",
+        "delivery_mode",
+        "required_on_next_authorized_goal_replacement",
+        "status"
+      ],
+      "properties": {
+        "canonical_main_goal_files_mutable": {"const": false},
+        "protected_path": {"const": "governance/tasks/millennium-goals/"},
+        "delivery_mode": {"const": "separate_research_branch_patch"},
+        "required_on_next_authorized_goal_replacement": {"const": true},
+        "status": {"const": "blocked_pending_explicit_research_branch_rollout"}
+      }
+    },
+    "required_surfaces": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  },
+  "$defs": {
+    "profile": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["evidence_ceiling", "required_capabilities", "required_controls"],
+      "properties": {
+        "evidence_ceiling": {"enum": ["candidate_only", "supported", "terminal_result"]},
+        "required_capabilities": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "required_controls": {"type": "array", "uniqueItems": true, "items": {"type": "string", "minLength": 1}}
+      }
+    },
+    "terminalPath": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["required_profile", "required_capabilities", "lean_execution_required", "root_closure_required", "independence_required"],
+      "properties": {
+        "required_profile": {"type": "string", "minLength": 1},
+        "required_capabilities": {"type": "array", "minItems": 1, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+        "lean_execution_required": {"type": "boolean"},
+        "root_closure_required": {"const": true},
+        "independence_required": {"const": true}
+      }
+    }
+  }
+}

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibe-mathing.local/schema/external-source-retrieval-receipt.v1.json",
+  "title": "Bounded external source retrieval receipt",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "receipt_id", "source_id", "registry_id", "registry_sha256",
+    "requested_url", "final_url", "redirect_count", "http_status", "retrieved_at",
+    "expires_at", "response_headers", "representation", "transport", "claim_scope",
+    "content_storage", "revalidated_from_receipt_id", "non_mathematical_evidence",
+    "receipt_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "external-source-retrieval-receipt.v1"},
+    "receipt_id": {"type": "string", "pattern": "^external-source-retrieval:[a-z0-9][a-z0-9.-]*:[0-9]{8}T[0-9]{6}Z$"},
+    "source_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9.-]*$"},
+    "registry_id": {"const": "external-context-sources"},
+    "registry_sha256": {"$ref": "#/$defs/sha256"},
+    "requested_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+    "final_url": {"type": "string", "format": "uri", "pattern": "^https://"},
+    "redirect_count": {"type": "integer", "minimum": 0, "maximum": 5},
+    "http_status": {"const": 200},
+    "retrieved_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": "string", "format": "date-time"},
+    "response_headers": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["date", "etag", "last_modified", "content_type", "content_length", "cache_control"],
+      "properties": {
+        "date": {"$ref": "#/$defs/nullableShortString"},
+        "etag": {"$ref": "#/$defs/nullableShortString"},
+        "last_modified": {"$ref": "#/$defs/nullableShortString"},
+        "content_type": {"type": "string", "minLength": 1, "maxLength": 200},
+        "content_length": {
+          "oneOf": [{"type": "null"}, {"type": "integer", "minimum": 0, "maximum": 4194304}]
+        },
+        "cache_control": {"$ref": "#/$defs/nullableShortString"}
+      }
+    },
+    "representation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sha256", "size_bytes"],
+      "properties": {
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "size_bytes": {"type": "integer", "minimum": 1, "maximum": 4194304}
+      }
+    },
+    "transport": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["method", "timeout_seconds", "max_bytes", "user_agent", "conditional_validator"],
+      "properties": {
+        "method": {"const": "GET"},
+        "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": 60},
+        "max_bytes": {"type": "integer", "minimum": 1024, "maximum": 4194304},
+        "user_agent": {"const": "vibe-mathing-external-context/1.0"},
+        "conditional_validator": {"type": "null"}
+      }
+    },
+    "claim_scope": {
+      "type": "array", "minItems": 1, "uniqueItems": true,
+      "items": {"type": "string", "pattern": "^[a-z][a-z0-9_]*$"}
+    },
+    "content_storage": {"const": "omitted_hash_only"},
+    "revalidated_from_receipt_id": {"type": "null"},
+    "non_mathematical_evidence": {"const": true},
+    "receipt_sha256": {"$ref": "#/$defs/sha256"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
+    "nullableShortString": {
+      "oneOf": [
+        {"type": "null"},
+        {"type": "string", "minLength": 1, "maxLength": 500, "pattern": "^[^\\r\\n]*$"}
+      ]
+    }
+  }
+}

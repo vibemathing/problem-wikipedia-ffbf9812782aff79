@@ -71,63 +71,9 @@ Then establish and report these facts without guessing:
 - writable paths, operation limits, runtime limits, and available tools;
 - the next falsifiable objective and its stop condition.
 
-A coordinator-only planning conversation is the sole exception to requiring an existing Issue/Attempt/Route/Graph/Obligation at bootstrap. It must read `WEB_COORDINATOR.md`, may only emit bounded T1–T9 planning/startup prompts or status/replanning summaries, and may not perform mathematical work or repository writes. Runnable worker prompts must bind nine unique research identities already pre-admitted on the fresh default branch; otherwise the coordinator returns only non-runnable pre-admission drafts. The coordinator is not a tenth mathematical lane.
-
 Return the bootstrap acknowledgement required by `research/schema/web-bootstrap-ack.schema.json` when the channel requests it.
 
-### 3.1 Mandatory mathematical reasoning discipline
-
-<!-- MATHEMATICAL_REASONING_DISCIPLINE_V1 -->
-
-All problem admission, candidate generation, derivation, construction, computation, proof, formalization, verification, and Result review MUST follow `governance/standards/MATHEMATICAL_REASONING_DISCIPLINE.md` and the machine policy in `governance/control-plane/mathematical-reasoning-discipline.v1.json`.
-
-Use this auditable sequence:
-
-```text
-definition and scope freeze
-  -> traceable dependency chain
-  -> explicit construction or witness
-  -> counterexample pressure test
-  -> invariant analysis
-  -> monovariant and termination
-  -> extremal / symmetry / probability checks
-  -> scale and boundary checks
-  -> verifiable evidence and an honest conclusion
-```
-
-A method may be inapplicable, but that decision and its reason must be explicit. Before saving a candidate, record which applicable checks were completed, failed, or remain open.
-
-Logic safeguards are mandatory:
-
-- Ordinary induction is `prove the base case -> assume P(n) for an arbitrary allowed n -> derive P(n+1) -> state the covered domain and step`. Finite examples, bounded enumeration, or an observed recurrence are not induction.
-- Contraposition may use `not Q -> not P` only for an established target implication `P -> Q`, with the same domain, quantifiers, and assumptions. Do not infer the converse `Q -> P`, the inverse `not P -> not Q`, or call absence of a sufficient condition absence of a necessary condition.
-- An existence claim needs an explicit checkable witness/certificate/algorithm, or a precise declaration that the proof is nonconstructive. Claims of correctness, implementability, scalability, or termination need their own dependency chain, runnable artifact, resource/complexity boundary, termination argument, and negative tests.
-- Attack the smallest cases, minimal counterexamples, degenerate/extreme parameters, assumption sensitivity, known obstructions, and scale transitions before polishing a universal proof.
-- For iterative arguments, distinguish an invariant from a strictly monotone quantity and give a well-founded termination order plus the bridge from terminal state to the target.
-- Check extremal choices, symmetry quotients/fixed points, probabilistic-method hypotheses, and local/global or finite/asymptotic transitions whenever relevant.
-- Computation, solver output, formal elaboration, kernel success, model review, CI, PR, or merge establishes only its exact recorded scope. Kernel evidence still requires statement-faithfulness and axiom/escape audits.
-
-If any applicable item is unresolved, preserve it as an open Obligation, FailedRoute, bounded Candidate, or `inconclusive`; never silently promote it to mathematical closure. A nested `AGENTS.md` may tighten this discipline but cannot omit or weaken it.
-
-### 3.2 Fresh-state precedence and admission dimensions
-
-Every research turn starts with a fresh read of the current default branch and live GitHub objects. Use this precedence for state facts:
-
-1. current default-branch records and `HARNESS_SNAPSHOT.json`;
-2. current Issue, branch, PR, required-check, and protection state;
-3. launch/readiness receipts bound to this repository;
-4. design-time prompt values;
-5. old chat replies, copied status text, and prior bootstrap acknowledgements.
-
-Lower items never override newer higher items. A design-time main SHA or Harness digest is an anchor for drift detection, not a permanent base; controlled merges may advance main. Historical `BLOCK_PRE_ADMISSION` or permission text is not a current fact. Re-emit a block only after a fresh read proves that the exact required object is still absent or mismatched.
-
-Treat channel audit maturity and concrete repository admission as separate dimensions. In particular, `capability_status` and `connector_observation.verification_status` describe evidence about the exact Plugin/App identity; they do not negate a repository whose identity, ProblemContract, Attempt/Route/Graph/Obligation, candidate transport, and protection state are currently verified. `operational_admission=admitted_problem_repository_namespace` authorizes only the candidate-only lane and grants no Evidence/Result authority.
-
-A protected default branch with zero required human approvals and passing automated checks is an admitted transport gate, not a permission failure. A normal end of one Web response is a runtime boundary, not a GitHub denial or research terminal state: write a bounded checkpoint when possible and resume from fresh state in the next turn.
-
-Issue creation is idempotent. Search open and closed Issues by the tuple `(problem_id, attempt_id, route_id, obligation_id)` and the `web-research-question` label, reuse the unique match, and create only when no match exists. If concurrent creation yields duplicates, select the oldest canonical Issue and mark later duplicates as coordination-only duplicates; never fan out the research state.
-
-**Fail closed:** if the fresh current state shows that repository identity is not `verified`, the ProblemContract is not `active` and `canonical_admitted`, the repository still contains `problem:template-placeholder`, or the target pre-admitted Attempt/Route/Obligation is absent, do not begin mathematical research. Perform only template/maintenance validation and state the exact missing admission step. Do not infer this block from historical chat output or audit-maturity labels alone.
+**Fail closed:** if the repository identity is not `verified`, the ProblemContract is not `active` and `canonical_admitted`, the repository still contains `problem:template-placeholder`, or no pre-admitted Attempt/Route/Obligation exists, do not begin mathematical research. Perform only template/maintenance validation and state the missing admission step.
 
 ## 4. Repository map: where truth lives
 
@@ -148,8 +94,7 @@ Issue creation is idempotent. Search open and closed Issues by the tuple `(probl
 | `.codex/skills/**` | Fixed mathematical method/router contracts | Read-only during research |
 | `governance/control-plane/**` | Source/operator registries and Harness contracts | Read-only during research |
 | `research/schema/**`, `scripts/**`, `.github/workflows/**` | Schemas, trusted code, and gates | Maintainer-only change |
-| `HARNESS_SNAPSHOT.json` | Current fixed suite identity and file digests | Never hand-edit |
-| `HARNESS_SNAPSHOT_HISTORY.json` | Append-only historical snapshot/importer bindings for immutable packets | Harness maintainer only |
+| `HARNESS_SNAPSHOT.json` | Fixed suite identity and file digests | Never hand-edit |
 
 A tool being technically able to write a path does not grant permission to write it. GitHub `contents: write` is not a path ACL; `WEB_CHANNEL_PROFILE.json`, `WEB_OUTPUT_CONTRACT.json`, the diff gate, and the closest `AGENTS.md` define the admitted surface.
 
@@ -180,9 +125,8 @@ Determine the role from the direct task, machine profile, actual principal, and 
 
 ### Harness maintainer
 
-- Acts only on an explicit maintenance task and a `maintenance/harness-*` branch under the allowlisted `vibemathing` maintainer identity.
+- Acts only on an explicit maintenance task and a separate trusted branch.
 - Rebuilds generated context/snapshots and runs the full Harness tests after changing contracts, Skills, schemas, scripts, or workflow.
-- The PR diff must equal the old/new Harness-owned snapshot delta plus regenerated control files; ProblemContract, records, candidate artifacts, EvidenceLinks, Results and Solution views cannot change.
 - Maintenance authority is not mathematical admission authority.
 
 ## 6. Skill routing: use the suite as a system
@@ -315,3 +259,48 @@ A research step is complete only when it leaves:
 - no unsupported `established`, `refuted`, `independent`, `kernel_checked`, or `result_admitted` claim.
 
 The problem is complete only when the admission gate derives a non-conflicting Result from valid, independent, statement-faithful evidence and the required Obligation DAG closure. Everything before that is research progress, not a solved-problem declaration.
+<!-- VERIFIED_AI_MATH_RESEARCH_FOUNDATION_V1 -->
+This repository inherits `governance/standards/VERIFIED_AI_MATHEMATICAL_RESEARCH_FOUNDATION.md`. PLFB remains the single conceptual root. The D01–D11 discovery loop is resumable but every action is bounded; generation, verification, admission, and mathematical conclusion remain separate, and runtime/transport success never substitutes for a Result gate.
+<!-- FORMAL_VERIFICATION_INFRASTRUCTURE_V1 -->
+This repository also inherits `governance/standards/FORMAL_VERIFICATION_INFRASTRUCTURE_STANDARD.md`. Every active problem must expose a formalization target/profile or a precise obstruction. Treat unreviewed AI Lean source as potentially malicious. Web agents may submit Lean/formalization candidates only: ProblemContract/frozen declaration and verifier-side trusted challenge stay outside Candidate control; challenge and Candidate are source-separated and digest-bound; statement identity is a trusted typed check, not string matching; semantic faithfulness needs an independent reviewer. Non-sandbox native execution is restricted to registry-authorized `trusted_fixture_native` plus an allowlisted challenge digest. Native build and `leanchecker --fresh` stay in the `lean-kernel` trust domain; they cannot sign independent `proof_replay_check`. Terminal proof replay must use a fixed checker/exporter/runner/config, sandbox Candidate input and come from a different trust domain. Missing, stale, timed-out or unqualified routes remain `blocked/undetermined`. Only trusted verifiers may sign capabilities.
+A coordinator-only planning conversation is the sole exception to requiring an existing Issue/Attempt/Route/Graph/Obligation at bootstrap. It must read `WEB_COORDINATOR.md`, may only emit bounded T1–T9 planning/startup prompts or status/replanning summaries, and may not perform mathematical work or repository writes. Runnable worker prompts must bind nine unique research identities already pre-admitted on the fresh default branch; otherwise the coordinator returns only non-runnable pre-admission drafts. The coordinator is not a tenth mathematical lane.
+### 3.1 Mandatory mathematical reasoning discipline
+<!-- MATHEMATICAL_REASONING_DISCIPLINE_V1 -->
+All problem admission, candidate generation, derivation, construction, computation, proof, formalization, verification, and Result review MUST follow `governance/standards/MATHEMATICAL_REASONING_DISCIPLINE.md` and the machine policy in `governance/control-plane/mathematical-reasoning-discipline.v1.json`.
+Use this auditable sequence:
+definition and scope freeze
+  -> traceable dependency chain
+  -> explicit construction or witness
+  -> counterexample pressure test
+  -> invariant analysis
+  -> monovariant and termination
+  -> extremal / symmetry / probability checks
+  -> scale and boundary checks
+  -> verifiable evidence and an honest conclusion
+A method may be inapplicable, but that decision and its reason must be explicit. Before saving a candidate, record which applicable checks were completed, failed, or remain open.
+Logic safeguards are mandatory:
+- Ordinary induction is `prove the base case -> assume P(n) for an arbitrary allowed n -> derive P(n+1) -> state the covered domain and step`. Finite examples, bounded enumeration, or an observed recurrence are not induction.
+- Contraposition may use `not Q -> not P` only for an established target implication `P -> Q`, with the same domain, quantifiers, and assumptions. Do not infer the converse `Q -> P`, the inverse `not P -> not Q`, or call absence of a sufficient condition absence of a necessary condition.
+- An existence claim needs an explicit checkable witness/certificate/algorithm, or a precise declaration that the proof is nonconstructive. Claims of correctness, implementability, scalability, or termination need their own dependency chain, runnable artifact, resource/complexity boundary, termination argument, and negative tests.
+- Attack the smallest cases, minimal counterexamples, degenerate/extreme parameters, assumption sensitivity, known obstructions, and scale transitions before polishing a universal proof.
+- For iterative arguments, distinguish an invariant from a strictly monotone quantity and give a well-founded termination order plus the bridge from terminal state to the target.
+- Check extremal choices, symmetry quotients/fixed points, probabilistic-method hypotheses, and local/global or finite/asymptotic transitions whenever relevant.
+- Computation, solver output, formal elaboration, kernel success, model review, CI, PR, or merge establishes only its exact recorded scope. Kernel evidence still requires statement-faithfulness and axiom/escape audits.
+If any applicable item is unresolved, preserve it as an open Obligation, FailedRoute, bounded Candidate, or `inconclusive`; never silently promote it to mathematical closure. A nested `AGENTS.md` may tighten this discipline but cannot omit or weaken it.
+### 3.2 Fresh-state precedence and admission dimensions
+Every research turn starts with a fresh read of the current default branch and live GitHub objects. Use this precedence for state facts:
+1. current default-branch records and `HARNESS_SNAPSHOT.json`;
+2. current Issue, branch, PR, required-check, and protection state;
+3. launch/readiness receipts bound to this repository;
+4. design-time prompt values;
+5. old chat replies, copied status text, and prior bootstrap acknowledgements.
+Lower items never override newer higher items. A design-time main SHA or Harness digest is an anchor for drift detection, not a permanent base; controlled merges may advance main. Historical `BLOCK_PRE_ADMISSION` or permission text is not a current fact. Re-emit a block only after a fresh read proves that the exact required object is still absent or mismatched.
+Treat channel audit maturity and concrete repository admission as separate dimensions. In particular, `capability_status` and `connector_observation.verification_status` describe evidence about the exact Plugin/App identity; they do not negate a repository whose identity, ProblemContract, Attempt/Route/Graph/Obligation, candidate transport, and protection state are currently verified. `operational_admission=admitted_problem_repository_namespace` authorizes only the candidate-only lane and grants no Evidence/Result authority.
+A protected default branch with zero required human approvals and passing automated checks is an admitted transport gate, not a permission failure. A normal end of one Web response is a runtime boundary, not a GitHub denial or research terminal state: write a bounded checkpoint when possible and resume from fresh state in the next turn.
+Issue creation is idempotent. Search open and closed Issues by the tuple `(problem_id, attempt_id, route_id, obligation_id)` and the `web-research-question` label, reuse the unique match, and create only when no match exists. If concurrent creation yields duplicates, select the oldest canonical Issue and mark later duplicates as coordination-only duplicates; never fan out the research state.
+**Fail closed:** if the fresh current state shows that repository identity is not `verified`, the ProblemContract is not `active` and `canonical_admitted`, the repository still contains `problem:template-placeholder`, or the target pre-admitted Attempt/Route/Obligation is absent, do not begin mathematical research. Perform only template/maintenance validation and state the exact missing admission step. Do not infer this block from historical chat output or audit-maturity labels alone.
+| `HARNESS_SNAPSHOT.json` | Current fixed suite identity and file digests | Never hand-edit |
+| `HARNESS_SNAPSHOT_HISTORY.json` | Append-only historical snapshot/importer bindings for immutable packets | Harness maintainer only |
+- Acts only on an explicit maintenance task and a `maintenance/harness-*` branch under the allowlisted `vibemathing` maintainer identity.
+- The PR diff must equal the old/new Harness-owned snapshot delta plus regenerated control files; ProblemContract, records, candidate artifacts, EvidenceLinks, Results and Solution views cannot change.
+- Lean/other kernel success establishes only the formal theorem under reported axioms and environment. Also audit `sorry`/admitted axioms/unsafe escape routes, bind a verifier-side trusted challenge, establish typed statement identity and obtain separate independent statement-faithfulness evidence. Native fresh replay remains same-domain; a proof-terminal replay requires sandbox-external trust diversity and fixed checker/exporter/runner/config identities.

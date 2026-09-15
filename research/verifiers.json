@@ -30,6 +30,17 @@
       "capabilities": []
     },
     {
+      "id": "trusted-lean-fixture-generator",
+      "role": "generator",
+      "trust_domain": "trusted-lean-fixture",
+      "policy": null,
+      "capabilities": [],
+      "native_input_trust": "trusted_fixture_native",
+      "trusted_challenge_allowlist": [
+        "10c90e78be67a7d68d01a0c0af7a8dc5ed19ebed98134ad4083e3d5651d62d6d"
+      ]
+    },
+    {
       "id": "smt-generator",
       "role": "generator",
       "trust_domain": "candidate-generation",
@@ -51,6 +62,13 @@
       "capabilities": ["statement_faithfulness"]
     },
     {
+      "id": "sympy-statement-identity-verifier",
+      "role": "verifier",
+      "trust_domain": "sympy-formal-identity",
+      "policy": "sympy-statement-identity-v1",
+      "capabilities": ["statement_identity"]
+    },
+    {
       "id": "sympy-smt-verifier",
       "role": "verifier",
       "trust_domain": "sympy-sat-qf-lra",
@@ -65,25 +83,60 @@
       "capabilities": ["statement_faithfulness"]
     },
     {
+      "id": "smt-statement-identity-verifier",
+      "role": "verifier",
+      "trust_domain": "smt-formal-identity",
+      "policy": "smt-statement-identity-v1",
+      "capabilities": ["statement_identity"]
+    },
+    {
       "id": "lean-kernel",
       "role": "verifier",
       "trust_domain": "lean-kernel",
-      "policy": "lean-kernel-fixture-v1",
-      "capabilities": ["kernel_check"]
+      "policy": "lean-kernel-fixture-v2-trusted-challenge-fresh-recheck",
+      "capabilities": ["kernel_check"],
+      "toolchain_allowlist": [
+        {
+          "id": "lean",
+          "version": "leanprover/lean4:v4.33.1",
+          "fingerprint": "c907251ae859e981a1cfd8aad4a2809e745cd2700ca35b1fe1bb929dae5c99f2"
+        }
+      ]
     },
     {
       "id": "lean-axiom-auditor",
       "role": "verifier",
       "trust_domain": "formal-audit",
       "policy": "lean-axiom-fixture-v1",
-      "capabilities": ["axiom_escape_audit"]
+      "capabilities": ["axiom_escape_audit"],
+      "toolchain_allowlist": [
+        {
+          "id": "lean",
+          "version": "leanprover/lean4:v4.33.1",
+          "fingerprint": "c907251ae859e981a1cfd8aad4a2809e745cd2700ca35b1fe1bb929dae5c99f2"
+        }
+      ]
     },
     {
-      "id": "lean-faithfulness-reviewer",
+      "id": "lean-statement-identity",
       "role": "verifier",
-      "trust_domain": "semantic-review",
-      "policy": "lean-statement-fixture-v1",
-      "capabilities": ["statement_faithfulness"]
+      "trust_domain": "formal-identity",
+      "policy": "lean-statement-identity-v2-typed-trusted-challenge",
+      "capabilities": ["statement_identity"],
+      "toolchain_allowlist": [
+        {
+          "id": "lean",
+          "version": "leanprover/lean4:v4.33.1",
+          "fingerprint": "c907251ae859e981a1cfd8aad4a2809e745cd2700ca35b1fe1bb929dae5c99f2"
+        }
+      ]
+    },
+    {
+      "id": "lean-toolchain-freshness-auditor",
+      "role": "verifier",
+      "trust_domain": "toolchain-governance",
+      "policy": "lean-toolchain-lock-v1",
+      "capabilities": ["toolchain_freshness"]
     }
   ]
 }

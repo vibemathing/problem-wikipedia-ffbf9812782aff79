@@ -1,0 +1,149 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vibemathing.cn/schemas/session-lineage-event.schema.json",
+  "title": "Session Lineage Event",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "ledger_id",
+    "sequence",
+    "event_id",
+    "event_kind",
+    "recorded_at",
+    "previous_event_sha256",
+    "event_sha256",
+    "object_id",
+    "payload"
+  ],
+  "properties": {
+    "schema_version": {"const": "session-lineage-event.v1"},
+    "ledger_id": {"const": "agent-session-lineage"},
+    "sequence": {"type": "integer", "minimum": 1},
+    "event_id": {"type": "string", "pattern": "^session-lineage-event:[0-9]{8}-[0-9]{4}$"},
+    "event_kind": {"const": "session_observed"},
+    "recorded_at": {"$ref": "#/$defs/timestamp"},
+    "previous_event_sha256": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/sha256"}
+      ]
+    },
+    "event_sha256": {"$ref": "#/$defs/sha256"},
+    "object_id": {"type": "string", "pattern": "^session-observation:(pi|codex):[0-9a-f-]{36}:v[1-9][0-9]*$"},
+    "payload": {"$ref": "#/$defs/sessionObservation"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "timestamp": {"type": "string", "format": "date-time"},
+    "nullableSha256": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/sha256"}
+      ]
+    },
+    "sessionObservation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "session_observation_id",
+        "session_id",
+        "observation_version",
+        "supersedes_session_observation_id",
+        "source",
+        "source_format",
+        "source_file_name",
+        "source_inventory_id",
+        "source_inventory_path",
+        "source_inventory_sha256",
+        "observed_at",
+        "created_at",
+        "cwd_scope",
+        "cwd_sha256",
+        "parent_session_id",
+        "first_user_message_sha256",
+        "git_branch",
+        "git_commit",
+        "observed_bytes",
+        "observed_nonempty_lines",
+        "source_prefix_sha256",
+        "counters",
+        "append_only_cutoff",
+        "content_policy",
+        "non_authoritative",
+        "non_mathematical_evidence"
+      ],
+      "properties": {
+        "session_observation_id": {"type": "string", "pattern": "^session-observation:(pi|codex):[0-9a-f-]{36}:v[1-9][0-9]*$"},
+        "session_id": {"type": "string", "format": "uuid"},
+        "observation_version": {"type": "integer", "minimum": 1},
+        "supersedes_session_observation_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^session-observation:(pi|codex):[0-9a-f-]{36}:v[1-9][0-9]*$"}
+          ]
+        },
+        "source": {"enum": ["pi", "codex"]},
+        "source_format": {"enum": ["pi-session-jsonl", "codex-rollout-jsonl"]},
+        "source_file_name": {"type": "string", "pattern": "^[^/\\\\]+\\.jsonl$", "maxLength": 255},
+        "source_inventory_id": {"type": "string", "pattern": "^agent-session-inventory-[0-9]{8}(-v[1-9][0-9]*)?$"},
+        "source_inventory_path": {"type": "string", "pattern": "^governance/tasks/0038-autonomous-research-retrospective/agent-session-inventory\\.v[1-9][0-9]*\\.json$"},
+        "source_inventory_sha256": {"$ref": "#/$defs/sha256"},
+        "observed_at": {"$ref": "#/$defs/timestamp"},
+        "created_at": {"$ref": "#/$defs/timestamp"},
+        "cwd_scope": {"enum": ["internal_root", "public_root", "internal_worktree", "public_worktree"]},
+        "cwd_sha256": {"$ref": "#/$defs/sha256"},
+        "parent_session_id": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "format": "uuid"}
+          ]
+        },
+        "first_user_message_sha256": {"$ref": "#/$defs/nullableSha256"},
+        "git_branch": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "minLength": 1, "maxLength": 255, "pattern": "^[^\\s]+$"}
+          ]
+        },
+        "git_commit": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^[0-9a-f]{40}$"}
+          ]
+        },
+        "observed_bytes": {"type": "integer", "minimum": 0},
+        "observed_nonempty_lines": {"type": "integer", "minimum": 0},
+        "source_prefix_sha256": {"$ref": "#/$defs/sha256"},
+        "counters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "parsed_records",
+            "malformed_records",
+            "compaction_or_summary_records",
+            "excluded_reasoning_blocks",
+            "visible_content_digest_count",
+            "visible_content_duplicate_events",
+            "tool_call_total",
+            "message_record_total"
+          ],
+          "properties": {
+            "parsed_records": {"type": "integer", "minimum": 0},
+            "malformed_records": {"type": "integer", "minimum": 0},
+            "compaction_or_summary_records": {"type": "integer", "minimum": 0},
+            "excluded_reasoning_blocks": {"type": "integer", "minimum": 0},
+            "visible_content_digest_count": {"type": "integer", "minimum": 0},
+            "visible_content_duplicate_events": {"type": "integer", "minimum": 0},
+            "tool_call_total": {"type": "integer", "minimum": 0},
+            "message_record_total": {"type": "integer", "minimum": 0}
+          }
+        },
+        "append_only_cutoff": {"const": true},
+        "content_policy": {"const": "metadata_counts_and_digests_only"},
+        "non_authoritative": {"const": true},
+        "non_mathematical_evidence": {"const": true}
+      }
+    }
+  }
+}
